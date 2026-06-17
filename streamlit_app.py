@@ -146,32 +146,29 @@ Please consult an oncologist for verification.
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
-    
-    # Fetch data directly from Supabase
-    response = supabase.table("patient_history").select("*").order("timestamp", desc=True).execute()
-    history = response.data
-    
-    if not history:
-        st.info("No records logged.")
-    else:
-        for entry in history:
-            # Using the column names from your database
-            with st.expander(f"Patient: {entry['patient_name']} ({entry['id']})"):
-                st.write(f"**Date:** {entry['timestamp']}")
-                st.write(f"**Risk Score:** {entry['risk_score']}")
-                st.write(f"**Cancer Type:** {entry['cancer_type']}")
-                st.json(entry['raw_data']) # Displays the dictionary clearly
-                # Reconstruct the report content for this specific record
-                report_text = f"Report for {entry['Patient']}\nID: {entry['ID']}\nScore: {entry['RiskScore']}\nMarkers: {entry}"
-
-                # Individual Download Button for this specific record
-                st.download_button(
-                    label=f"📥 Download {entry['ID']}",
-                    data=report_text,
-                    file_name=f"{entry['Patient']}_{entry['ID']}.txt",
-                    mime="text/plain"
-                )
-
+        
+        response = supabase.table("patient_history").select("*").order("timestamp", desc=True).execute()
+        history = response.data
+        
+        if not history:
+            st.info("No records logged.")
+        else:
+            for entry in history:
+                # Use LOWERCASE keys to match the database
+                with st.expander(f"Patient: {entry['patient_name']} ({entry['id']})"):
+                    st.write(f"**Date:** {entry['timestamp']}")
+                    st.write(f"**Risk Score:** {entry['risk_score']}")
+                    st.write(f"**Cancer Type:** {entry['cancer_type']}")
+                    st.json(entry['raw_data'])
+                    
+                    # Update download button to use correct keys
+                    report_text = f"Report for {entry['patient_name']}\nID: {entry['id']}\nScore: {entry['risk_score']}"
+                    st.download_button(
+                        label=f"📥 Download {entry['id']}", 
+                        data=report_text, 
+                        file_name=f"{entry['patient_name']}_{entry['id']}.txt", 
+                        mime="text/plain"
+                    )
 
         # CSV Export
         col1, col2 = st.columns(2)
