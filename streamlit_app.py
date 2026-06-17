@@ -78,7 +78,35 @@ if st.button("Generate Diagnostic Report"):
             y_final = base_risk + (calculated_risk * 0.95) # Scales risk up from the 5% base
             
             formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
-            
+
+            # --- Hospital Bill Format ---
+            report_content = f"""
+==================================================
+           HOSPITAL CLINICAL LABORATORY           
+==================================================
+Patient Name : {patient_name}
+Date/Time    : {formatted_time}
+Test Type    : {cancer.upper()} RISK ASSESSMENT
+--------------------------------------------------
+Clinical Markers:
+"""
+            for i, name in enumerate(info["names"]):
+                report_content += f"- {name}: {X_raw[i]}\n"
+
+            report_content += f"""
+--------------------------------------------------
+FINAL RISK SCORE: {y_final:.2%}
+--------------------------------------------------
+Result Interpretation: 
+Risk level calculated based on clinical markers.
+Please consult an oncologist for verification.
+==================================================
+"""
+            # Display on Screen
+            st.subheader("Diagnostic Report Preview")
+            st.text(report_content)
+
+            # Save to DB
             db_record = {
                 "timestamp": formatted_time, 
                 "patient_name": patient_name, 
