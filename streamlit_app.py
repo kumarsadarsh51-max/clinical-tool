@@ -27,10 +27,10 @@ CANCER_CONFIG = {
 st.set_page_config(page_title="Clinical Risk Assessment", layout="centered")
 st.title("🏥 Clinical Risk Assessment Tool")
 
-patient_name = st.text_input("Patient Full Name")
+patient_name = st.text_input("Patient Full Name",key="patient_name")
 cancer = st.selectbox("Select Cancer Type", list(CANCER_CONFIG.keys()))
 info = CANCER_CONFIG[cancer]
-X_raw = [st.number_input(f"{name} value:", value=0.0, format="%.2f") for name in info["names"]]
+X_raw = [st.number_input(f"{name} value:", value=0.0, format="%.2f", key=f"marker_{name}") for name in info["names"]]
 
 # Initialize session state for the report
 if "report_content" not in st.session_state:
@@ -114,7 +114,10 @@ Please consult an oncologist for verification.
             
             try:
                 supabase.table("patient_history").insert(db_record).execute()
-                # 4. Trigger rerun to clear form inputs
+                # Reset the inputs
+                st.session_state.patient_name=""
+                for name in info["names]:
+                    st.session_state[f"marker_{name}"] = 0.0
                 st.rerun()
             except Exception as e:
                 st.error(f"Save error: {e}")
