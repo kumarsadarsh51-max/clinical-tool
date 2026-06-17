@@ -98,31 +98,28 @@ Please consult an oncologist for verification.
         random_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
         unique_id = f"P-{random_suffix}-{int(datetime.datetime.now().timestamp())}"
 
-        # Add to History (Internal logic)
-        record = {
-            "ID": unique_id, 
-            "Timestamp": formatted_time,
-            "Patient": patient_name,
-            "CancerType": cancer,
-            "RiskScore": f"{y_final:.2%}",
-            **dict(zip(info["names"], X_raw))
-        }
-        is_duplicate = False
-        for entry in st.session_state.patient_history:
-            if (entry['Patient'] == record['Patient'] and 
-                entry['CancerType'] == record['CancerType'] and
-                all(entry.get(k) == record.get(k) for k in info["names"])):
-                is_duplicate = True
-                duplicate_time = entry['Timestamp']
-                break
+        # Generate ID and save directly
+    db_record = {
+        "id": unique_id,
+        "timestamp": formatted_time,
+        "patient_name": patient_name,
+        "cancer_type": cancer,
+        "risk_score": f"{y_final:.2%}",
+        "raw_data": str(dict(zip(info["names"], X_raw)))
+    }
 
-        if is_duplicate:
-            st.toast("Couldnt save record. Duplicate Found!", icon="⚠️")
-            st.warning(f"⚠️ Duplicate entry detected! This assessment was already recorded at {duplicate_time}.")
-        # ... inside your 'else' block for the duplicate check ...
-            st.subheader("Reference: Previous Clinical Output") # Clear distinction
-            st.info("The output below corresponds to the previously saved record.")
-            st.text(report_content)
+    try:
+        # Save directly to Supabase
+        supabase.table("patient_history").insert(db_record).execute()
+        st.success("✅ Report saved to database!")
+        
+        # Add a short delay then refresh
+        import time
+        time.sleep(1)
+        st.rerun()
+        
+    except Exception as e:
+        st.error(f"Database error: {e}")
        
         else:
       db_record = {
