@@ -41,8 +41,6 @@ if st.button("Generate Diagnostic Report"):
         st.error("Please enter a patient name first.")
     elif cancer == "--select--":
         st.error("Please select a valid cancer type.")
-    elif:
-        formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
     else:
         # Calculation Logic
         X_norm = np.array([raw_to_norm(X_raw[i], info["cutoffs"][i]) for i in range(len(info["cutoffs"]))])
