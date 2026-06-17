@@ -204,7 +204,7 @@ with st.sidebar:
                     with col1:
                         # CSV FILE DOWNLAOD
                         csv_content = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{entry.get('raw_data')}\""
-                        st.download_button("📥 CSV", csv_content, f"report_{entry.get('patient_name')}.csv", "text/csv", key=f"csv_{entry_id}"
+                        st.download_button("📥 CSV", csv_content, f"report_{entry.get('patient_name')}.csv", "text/csv", key=f"csv_{entry_id}")
 
                     with col2:
                         # PDF DOWNLOAD
