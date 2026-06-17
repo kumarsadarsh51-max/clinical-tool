@@ -91,64 +91,59 @@ Please consult an oncologist for verification.
         # Display on Screen (Kept exactly as requested)
         st.subheader("Diagnostic Report Preview")
         st.text(report_content)
-        
-        db_record = {
+       
+       
+   # Generate ID and save directly
+    db_record = {
         "timestamp": formatted_time,
         "patient_name": patient_name,
         "cancer_type": cancer,
         "risk_score": f"{y_final:.2%}",
-        "raw_data": dict(zip(info["names"], X_raw))
+        "raw_data": str(dict(zip(info["names"], X_raw)))
     }
 
     # Update your insert block to this:
 try:
     response = supabase.table("patient_history").insert(db_record).execute()
-    print("DEBUG: Supabase Response:", response) # Check this in the LOGS
-    if response:
-        st.success("✅ Report saved to database ")
-        import time
-        time.sleep(2)
-        st.rerun()
-    else:
-        st.error("Database did not return a success response.")
+    st.success("✅ Saved!")
+    st.session_state.refresh_count += 1
+    # The sleep ensures the DB has time to write before the refresh
+    import time
+    time.sleep(2) 
+    st.rerun() 
 except Exception as e:
     st.error(f"Error: {e}")
+    
 # --- Sidebar History Log ---
+if 'refresh_count' not in st.session_state:
+    st.session_state.refresh_count = 0
 with st.sidebar:
     st.title("📜 Patient History Log")
-    
+    st.container(key=f"sidebar_content_{st.session_state.refresh_count}")
     try:
-        # Fix: Ensure 'patient_history' exists and spelling is correct
         response = supabase.table("patient_history").select("*").order("id", desc=True).execute()
-        history = response.data
-    except Exception as e:
-        st.error(f"DB Load Error: {e}")
         
-        #  Display history
-    if not history:
-        st.info("No records in database.")
-    else:
-        df = pd.DataFrame(history)
-        for entry in history:
-            name = entry.get('patient_name', 'Unknown')
-            eid = entry.get('id', 'N/A')
-            with st.expander(f"Patient: {name} ({eid})"):
-                st.write(f"**Date:** {entry.get('timestamp')}")
-                st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                st.json(entry.get('raw_data', {}))
+        if response.data:
+            history = response.data
+            # Convert to DataFrame for CSV
+            df = pd.DataFrame(history)
+            
+            for entry in history:
+                entry_id = entry.get('id', 'N/A')
+                with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')} ({entry_id})"):
+        st.write(f"**Date:** {entry.get('timestamp')}")
+        st.write(f"**Risk Score:** {entry.get('risk_score')}")
+        st.write(f"**Raw Data:** {entry.get('raw_data')}") # Display as text string
                     
-                    # 3. Create download button inside the loop
-                    report_text = f"Report for {patient_name}\nID: {entry_id}\nScore: {entry.get('risk_score')}"
-                    st.download_button(
-                        label=f"📥 Download {entry_id}", 
-                        data=report_text, 
-                        file_name=f"report_{entry_id}.txt"
-                    )
+                    # Button inside the loop
+                    report_text = f"Report for {entry.get('patient_name')}\nID: {entry_id}"
+                    st.download_button(f"📥 Download {entry_id}", report_text, f"report_{entry_id}.txt")
 
-            # 4. CSV Export
+            # CSV Export
             csv_buffer = io.StringIO()
             df.to_csv(csv_buffer, index=False)
             st.download_button("📥 Download Full History (CSV)", csv_buffer.getvalue(), "history.csv", "text/csv")
-            
+        else:
+            st.info("No records in database.")
     except Exception as e:
-        st.error(f"DB Load Error: {e}")
+        st.error(f"Database Error: {e}")
