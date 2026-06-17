@@ -31,16 +31,17 @@ st.set_page_config(page_title="Clinical Risk Assessment", layout="centered")
 
 # --- Main Assessment UI ---
 st.title("🏥 Clinical Risk Assessment Tool")
-patient_name = st.text_input("Patient Full Name")
-cancer = st.selectbox("Select Cancer Type", list(CANCER_CONFIG.keys()))
-info = CANCER_CONFIG[cancer]
-X_raw = [st.number_input(f"{name} value:", value=0.0, format="%.2f") for name in info["names"]]
+
+# Use 'key' to force clear the inputs after save
+patient_name = st.text_input("Patient Full Name", key="p_name")
+cancer = st.selectbox("Select Cancer Type", ["--select--", "lung", "breast", "prostate"], key="c_type")
+
+info = CANCER_CONFIG[cancer] if cancer != "--select--" else {"names": []}
+X_raw = [st.number_input(f"{name} value:", value=0.0, format="%.2f", key=f"val_{name}") for name in info["names"]]
 
 if st.button("Generate Diagnostic Report"):
-    if not patient_name:
-        st.error("Please enter a patient name first.")
-    elif cancer == "--select--":
-        st.error("Please select a valid cancer type.")
+    if not patient_name or cancer == "--select--":
+        st.error("Please fill in all fields.")
     else:
         # Calculation Logic
         X_norm = np.array([raw_to_norm(X_raw[i], info["cutoffs"][i]) for i in range(len(info["cutoffs"]))])
@@ -95,23 +96,25 @@ Please consult an oncologist for verification.
        
    # Generate ID and save directly
     db_record = {
-        "timestamp": formatted_time,
-        "patient_name": patient_name,
-        "cancer_type": cancer,
-        "risk_score": f"{y_final:.2%}",
-        "raw_data": str(dict(zip(info["names"], X_raw)))
-    }
+            "timestamp": formatted_time,
+            "patient_name": patient_name,
+            "cancer_type": cancer,
+            "risk_score": f"{y_final:.2%}",
+            "raw_data": str(dict(zip(info["names"], X_raw)))
+        }
 
-    # Update your insert block to this:
-try:
-            # Save to Supabase
-            response = supabase.schema('public').table("patient_history").insert(db_record).execute()
+        try:
+            supabase.schema('public').table("patient_history").insert(db_record).execute()
+            st.success("✅ Saved!")
             
-            # Instead of st.rerun(), use a session state flag to trigger a reload
-            st.session_state.data_saved = True
-            st.success("✅ Report saved! Data will appear in sidebar shortly.")
+            # THE FIX: This clears the inputs manually
+            st.session_state.p_name = ""
+            st.session_state.c_type = "--select--"
+            
+            time.sleep(1)
+            st.rerun() # Now it reruns with empty inputs and fresh DB data
         except Exception as e:
-            st.error(f"Database error: {e}")
+            st.error(f"Error: {e}")
 # This ensures the sidebar refreshes only when data_saved is True
 if st.session_state.get("data_saved", False):
     st.session_state.data_saved = False # Reset flag
