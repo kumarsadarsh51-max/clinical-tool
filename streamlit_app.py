@@ -5,6 +5,18 @@ import time
 from zoneinfo import ZoneInfo
 from supabase import create_client
 
+# CANCER CONFIGURATION:
+CANCER_CONFIG = {
+    "--select--": {"names": []},
+    "lung": {"names": ["CEA", "CA125", "NSE", "CYFRA21-1", "Pro-GRP"], "cutoffs": [5.0, 35.0, 16.0, 3.5, 65.0]},
+    "breast": {"names": ["CA15-3", "CA125", "CEA", "HER2", "ER"], "cutoffs": [30.0, 35.0, 5.0, 2.5, 2.5]},
+    "prostate": {"names": ["PSA", "Free-PSA", "PSA-Density", "DRE", "Gleason"], "cutoffs": [4.0, 0.25, 0.10, 1.5, 6.0]}
+}
+
+# INITIALIZING INFO (ESCAPING ERROR MESSAGE)
+if "info" not in locals():
+    info = CANCER_CONFIG["--select--"]
+
 # Reset trigger
 if "reset_form" not in st.session_state:
     st.session_state.reset_form = False
@@ -27,14 +39,8 @@ def raw_to_norm(x, cutoff=1.0):
     if x >= 5 * cutoff: return 1.0
     if x <= cutoff: return 0.8 * x / cutoff
     else: return 0.8 + 0.2 * (x - cutoff) / (4 * cutoff)
-
-CANCER_CONFIG = {
-    "--select--": {"names": []},
-    "lung": {"names": ["CEA", "CA125", "NSE", "CYFRA21-1", "Pro-GRP"], "cutoffs": [5.0, 35.0, 16.0, 3.5, 65.0]},
-    "breast": {"names": ["CA15-3", "CA125", "CEA", "HER2", "ER"], "cutoffs": [30.0, 35.0, 5.0, 2.5, 2.5]},
-    "prostate": {"names": ["PSA", "Free-PSA", "PSA-Density", "DRE", "Gleason"], "cutoffs": [4.0, 0.25, 0.10, 1.5, 6.0]}
-}
-
+        
+# SETTING UI OF WEBSITE
 st.set_page_config(page_title="Clinical Risk Assessment", layout="centered")
 st.title("🏥 Clinical Risk Assessment Tool")
 
