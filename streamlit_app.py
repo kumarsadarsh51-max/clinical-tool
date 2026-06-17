@@ -116,7 +116,7 @@ Please consult an oncologist for verification.
                 supabase.table("patient_history").insert(db_record).execute()
                 # Reset the inputs
                 st.session_state.patient_name=""
-                for name in info["names]:
+                for name in info["names"]:
                     st.session_state[f"marker_{name}"] = 0.0
                 st.rerun()
             except Exception as e:
