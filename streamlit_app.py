@@ -57,6 +57,7 @@ if st.button("Generate Diagnostic Report"):
         )
         
         if duplicate:
+            st.toast("This is a duplicate entry!", symbol=⚠️)
             st.warning("⚠️ Duplicate entry detected!")
             st.write("The following matching entry already exists in the system:")
             with st.expander("View Original Entry Details", expanded=True):
