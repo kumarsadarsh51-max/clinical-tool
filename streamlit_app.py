@@ -190,13 +190,12 @@ if "report_content" in st.session_state and st.session_state.report_content:
         st.rerun()
 
 # --- Sidebar History Log ---
+# --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
     
     # --- 1. SEARCH & FILTER CONTROLS ---
     search_query = st.text_input("🔍 Search by Patient Name").lower()
-    
-    # Date filter: Default to the full range of your data
     st.write("Filter by Date Range:")
     col1, col2 = st.columns(2)
     with col1:
@@ -211,43 +210,55 @@ with st.sidebar:
         if not history:
             st.info("No records found.")
         else:
-            # --- 2. APPLY FILTERS ---
             filtered_history = []
             for entry in history:
-                # Filter by name
                 name_match = search_query in entry.get('patient_name', '').lower()
-                
-                # Filter by date
-                entry_date_str = entry.get('timestamp').split('/')[0] # Get '17-06-2026'
+                entry_date_str = entry.get('timestamp').split('/')[0]
                 entry_date = datetime.datetime.strptime(entry_date_str, '%d-%m-%Y').date()
                 date_match = start_date <= entry_date <= end_date
-                
                 if name_match and date_match:
                     filtered_history.append(entry)
 
-            # --- 3. RENDER FILTERED LIST ---
             if not filtered_history:
                 st.warning("No records match these filters.")
             else:
                 for entry in filtered_history:
                     title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
+                    
                     with st.expander(title):
-                        # ... (Keep your existing expander content code here) ...
                         st.write(f"**Date:** {entry.get('timestamp')}")
                         st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
                         st.write(f"**Risk Score:** {entry.get('risk_score')}")
                         
-                    
-                    
+                        # --- EXPORT OPTIONS (Inside the expander) ---
+                        col_pdf, col_csv = st.columns(2)
+                        
+                        with col_pdf:
+                            pdf_bytes = generate_pdf(entry)
+                            st.download_button(
+                                label="📥 PDF",
+                                data=pdf_bytes,
+                                file_name=f"report_{entry.get('patient_name')}.pdf",
+                                mime="application/pdf"
+                            )
+                            
+                        with col_csv:
+                            csv_string = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{entry.get('raw_data')}\""
+                            st.download_button(
+                                label="📥 CSV",
+                                data=csv_string,
+                                file_name=f"report_{entry.get('patient_name')}.csv",
+                                mime="text/csv"
+                            )
+
     except Exception as e:
         st.error(f"DB Load Error: {e}")
-        
+
     # --- Clear History Button ---
     if st.button("🗑️ Clear All History"):
         try:
-            # Delete all rows in the table
             supabase.table("patient_history").delete().neq("id", 0).execute()
             st.success("History cleared!")
-            st.rerun() # Refresh to update the UI
+            st.rerun()
         except Exception as e:
             st.error(f"Error clearing history: {e}")
