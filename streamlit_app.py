@@ -157,27 +157,53 @@ if "report_content" in st.session_state and st.session_state.report_content:
         st.rerun()
 
 # --- Sidebar History Log ---
-# --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
+    
+    # --- 1. SEARCH & FILTER CONTROLS ---
+    search_query = st.text_input("🔍 Search by Patient Name").lower()
+    
+    # Date filter: Default to the full range of your data
+    st.write("Filter by Date Range:")
+    col1, col2 = st.columns(2)
+    with col1:
+        start_date = st.date_input("Start", value=datetime.date(2026, 1, 1))
+    with col2:
+        end_date = st.date_input("End", value=datetime.date.today())
+
     try:
         response = supabase.table("patient_history").select("*").execute()
         history = response.data
+        
         if not history:
             st.info("No records found.")
         else:
-            # Move imports to the top of the file if not already there!
-            import pandas as pd
-            import ast
-            
+            # --- 2. APPLY FILTERS ---
+            filtered_history = []
             for entry in history:
-                title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
+                # Filter by name
+                name_match = search_query in entry.get('patient_name', '').lower()
                 
-                with st.expander(title):
-                    st.write(f"**Date:** {entry.get('timestamp')}")
-                    st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
-                    st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                    st.write(f"**Raw Data:** {entry.get('raw_data')}")
+                # Filter by date
+                entry_date_str = entry.get('timestamp').split('/')[0] # Get '17-06-2026'
+                entry_date = datetime.datetime.strptime(entry_date_str, '%d-%m-%Y').date()
+                date_match = start_date <= entry_date <= end_date
+                
+                if name_match and date_match:
+                    filtered_history.append(entry)
+
+            # --- 3. RENDER FILTERED LIST ---
+            if not filtered_history:
+                st.warning("No records match these filters.")
+            else:
+                for entry in filtered_history:
+                    title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
+                    with st.expander(title):
+                        # ... (Keep your existing expander content code here) ...
+                        st.write(f"**Date:** {entry.get('timestamp')}")
+                        st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
+                        st.write(f"**Risk Score:** {entry.get('risk_score')}")
+                        
                     
                     # Define csv_data inside the loop so it's always available for this entry
                     csv_string = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{entry.get('raw_data')}\""
@@ -211,7 +237,9 @@ with st.sidebar:
                     else:
                         st.info("Not enough data to show trends yet.")
     except Exception as e:
-        st.error(f"DB Load Error: {e}")# --- Clear History Button ---
+        st.error(f"DB Load Error: {e}")
+        
+    # --- Clear History Button ---
     if st.button("🗑️ Clear All History"):
         try:
             # Delete all rows in the table
