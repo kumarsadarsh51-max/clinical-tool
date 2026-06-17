@@ -94,8 +94,8 @@ st.text(report_content)
        
    # Generate ID and save directly
     # 2. Prepare Data
-        formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
-        db_record = {
+formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
+    db_record = {
             "timestamp": formatted_time,
             "patient_name": patient_name,
             "cancer_type": cancer,
