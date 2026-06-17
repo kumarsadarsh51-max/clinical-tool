@@ -33,6 +33,9 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
+def clear_report():
+    st.session_state.report_content = None
+
 # --- Logic Functions ---
 def raw_to_norm(x, cutoff=1.0):
     if x <= 0: return 0.0
@@ -47,7 +50,7 @@ st.title("🏥 Clinical Risk Assessment Tool")
 patient_name = st.text_input("Patient Full Name",key="patient_name")
 cancer = st.selectbox("Select Cancer Type", list(CANCER_CONFIG.keys()))
 info = CANCER_CONFIG[cancer]
-X_raw = [st.number_input(f"{name} value:", value=0.0, format="%.2f", key=f"marker_{name}") for name in info["names"]]
+X_raw = [st.number_input(f"{name} value:", value=0.0, format="%.2f", key=f"marker_{name}", on_change=clear_report) for name in info["names"]]
 
 # Initialize session state for the report
 if "report_content" not in st.session_state:
