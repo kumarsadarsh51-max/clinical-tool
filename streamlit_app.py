@@ -36,26 +36,55 @@ if st.button("Generate Diagnostic Report"):
     if not patient_name or cancer == "--select--":
         st.error("Please fill in all fields.")
     else:
-        X_norm = np.array([raw_to_norm(X_raw[i], info["cutoffs"][i]) for i in range(len(info["cutoffs"]))])
-        y_final = 0.5 
-        formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
-        
-        db_record = {
-            "timestamp": formatted_time,
+        # 1. Define current entry data
+        current_data = {
             "patient_name": patient_name,
             "cancer_type": cancer,
-            "risk_score": f"{y_final:.2%}",
             "raw_data": str(dict(zip(info["names"], X_raw)))
         }
         
-        try:
-            supabase.table("patient_history").insert(db_record).execute()
-            st.success("✅ Report saved!")
-            time.sleep(1)
-            st.rerun()
-        except Exception as e:
-            st.error(f"Save error: {e}")
-
+        # 2. Fetch existing history to check for duplicates
+        response = supabase.table("patient_history").select("*").execute()
+        existing_records = response.data
+        
+        # 3. Check for exact match
+        duplicate = next(
+            (item for item in existing_records 
+             if item['patient_name'] == current_data['patient_name'] 
+             and item['cancer_type'] == current_data['cancer_type']
+             and item['raw_data'] == current_data['raw_data']), 
+            None
+        )
+        
+        if duplicate:
+            st.warning("⚠️ Duplicate entry detected!")
+            st.write("The following matching entry already exists in the system:")
+            with st.expander("View Original Entry Details", expanded=True):
+                st.write(f"**Patient:** {duplicate.get('patient_name')}")
+                st.write(f"**Date:** {duplicate.get('timestamp')}")
+                st.write(f"**Risk Score:** {duplicate.get('risk_score')}")
+                st.write(f"**Raw Data:** {duplicate.get('raw_data')}")
+        else:
+            # Proceed with normal save logic
+            X_norm = np.array([raw_to_norm(X_raw[i], info["cutoffs"][i]) for i in range(len(info["cutoffs"]))])
+            y_final = 0.5
+            formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
+            
+            db_record = {
+                "timestamp": formatted_time, 
+                "patient_name": patient_name, 
+                "cancer_type": cancer, 
+                "risk_score": f"{y_final:.2%}", 
+                "raw_data": current_data["raw_data"]
+            }
+            
+            try:
+                supabase.table("patient_history").insert(db_record).execute()
+                st.success("✅ Report saved!")
+                time.sleep(1)
+                st.rerun()
+            except Exception as e:
+                st.error(f"Save error: {e}")
 # --- Sidebar History Log ---
 # --- Sidebar History Log ---
 with st.sidebar:
