@@ -105,6 +105,16 @@ if st.button("Generate Diagnostic Report"):
 
             # --- Hospital Bill Format ---
             # Store report in session state
+            # Helper to format markers with warnings
+            marker_lines = []
+            for i, name in enumerate(info["names"]):
+                val = X_raw[i]
+                cutoff = info["cutoffs"][i]
+                # Flag if value exceeds cutoff
+                if val > cutoff:
+                    marker_lines.append(f"- {name}: {val} (HIGH - ALERT)")
+                else:
+                    marker_lines.append(f"- {name}: {val}")
             st.session_state.report_content = f"""
 ==================================================
            HOSPITAL CLINICAL LABORATORY           
