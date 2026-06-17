@@ -105,7 +105,7 @@ Please consult an oncologist for verification.
     # Update your insert block to this:
 try:
             # 1. Execute
-            response = supabase.table("patient_history").insert(db_record).execute()
+            response = supabase.schema('public').table("patient_history").insert(db_record).execute()
             
             # --- ADD THIS LINE TO SEE THE DEBUG DATA ---
             st.write("DEBUG RESPONSE DATA:", response.data)
@@ -125,7 +125,7 @@ with st.sidebar:
     st.title("📜 Patient History Log")
     st.container(key=f"sidebar_content_{st.session_state.refresh_count}")
     try:
-        response = supabase.table("patient_history").select("*").order("id", desc=True).execute()
+        response = supabase.schema('public').table("patient_history").select("*").order("id", desc=True).execute()
         
         if response.data:
             history = response.data
