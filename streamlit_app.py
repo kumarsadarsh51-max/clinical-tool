@@ -141,7 +141,8 @@ Please consult an oncologist for verification.
         st.success("✅ Report generated and saved to history!")
         st.rerun()
     except Exception as e:
-        st.error(f"Database error: {e}")
+        st.error(f"Database error: {str(e)}")
+        st.write("DEBUG INFO:", db_record) # This will print the data being sent
         
 # --- Sidebar History Log ---
 with st.sidebar:
