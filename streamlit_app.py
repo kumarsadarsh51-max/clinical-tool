@@ -87,9 +87,9 @@ Risk level calculated based on clinical markers.
 Please consult an oncologist for verification.
 ==================================================
 """
-        # Display on Screen (Kept exactly as requested)
-        st.subheader("Diagnostic Report Preview")
-        st.text(report_content)
+# Display on Screen (Kept exactly as requested)
+st.subheader("Diagnostic Report Preview")
+st.text(report_content)
        
        
    # Generate ID and save directly
