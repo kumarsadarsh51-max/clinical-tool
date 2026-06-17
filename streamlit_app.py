@@ -32,31 +32,6 @@ if st.session_state.reset_form:
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
-
-# FOR BILL GENERATION
-from fpdf import FPDF
-
-def generate_pdf(entry):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="HOSPITAL CLINICAL LABORATORY", ln=True, align='C')
-    pdf.set_font("Arial", size=12)
-    pdf.ln(10)
-    
-    # Fill in the content exactly like your bill format
-    report_text = f"""
-Patient Name : {entry.get('patient_name')}
-Date/Time    : {entry.get('timestamp')}
-Test Type    : {entry.get('cancer_type', '').upper()} RISK ASSESSMENT
---------------------------------------------------
-Risk Score   : {entry.get('risk_score')}
-Raw Data     : {entry.get('raw_data')}
---------------------------------------------------
-Please consult an oncologist for verification.
-    """
-    pdf.multi_cell(0, 10, txt=report_text)
-    return pdf.output(dest='S') # Returns PDF as bytes
     
 # --- Logic Functions ---
 def raw_to_norm(x, cutoff=1.0):
@@ -203,18 +178,9 @@ with st.sidebar:
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
                     st.write(f"**Raw Data:** {raw_data}")
                     
-                    # Layout for buttons
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        # CSV Download
-                        csv_content = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{raw_data}\""
+                    # DOWNLOAD CSV FILE
+                    csv_content = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{raw_data}\""
                         st.download_button("📥 CSV", csv_content, f"report_{entry.get('patient_name')}.csv", "text/csv", key=f"csv_{entry_id}")
-                    
-                    with col2:
-                        # PDF Download
-                        pdf_bytes = generate_pdf(entry)
-                        st.download_button("📥 PDF", pdf_bytes, f"report_{entry.get('patient_name')}.pdf", "application/pdf", key=f"pdf_{entry_id}")
                         
     except Exception as e:
         st.error(f"DB Load Error: {e}")
