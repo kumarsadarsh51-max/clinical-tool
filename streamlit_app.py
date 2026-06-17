@@ -74,3 +74,13 @@ with st.sidebar:
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
     except Exception as e:
         st.error(f"DB Load Error: {e}")
+
+# --- Clear History Button ---
+    if st.button("🗑️ Clear All History"):
+        try:
+            # Delete all rows in the table
+            supabase.table("patient_history").delete().neq("id", 0).execute()
+            st.success("History cleared!")
+            st.rerun() # Refresh to update the UI
+        except Exception as e:
+            st.error(f"Error clearing history: {e}")
