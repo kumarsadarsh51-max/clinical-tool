@@ -119,31 +119,30 @@ try:
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
-    st.container(key=f"sidebar_content_{st.session_state.refresh_count}")
+    
     try:
+        # Fetch data directly from public schema
         response = supabase.schema('public').table("patient_history").select("*").order("id", desc=True).execute()
         
+        # Check if we have data
         if response.data:
             history = response.data
-            # Convert to DataFrame for CSV
-            df = pd.DataFrame(history)
-            
             for entry in history:
+                # Use a unique key for each expander to prevent UI glitches
                 entry_id = entry.get('id', 'N/A')
-                with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')} ({entry_id})"):
-        st.write(f"**Date:** {entry.get('timestamp')}")
-        st.write(f"**Risk Score:** {entry.get('risk_score')}")
-        st.write(f"**Raw Data:** {entry.get('raw_data')}") # Display as text string
+                with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')}", expanded=False):
+                    st.write(f"**Date:** {entry.get('timestamp')}")
+                    st.write(f"**Risk Score:** {entry.get('risk_score')}")
+                    st.write(f"**Raw Data:** {entry.get('raw_data')}")
                     
-                    # Button inside the loop
-                    report_text = f"Report for {entry.get('patient_name')}\nID: {entry_id}"
-                    st.download_button(f"📥 Download {entry_id}", report_text, f"report_{entry_id}.txt")
-
-            # CSV Export
-            csv_buffer = io.StringIO()
-            df.to_csv(csv_buffer, index=False)
-            st.download_button("📥 Download Full History (CSV)", csv_buffer.getvalue(), "history.csv", "text/csv")
+                    # Correctly scoped download button
+                    st.download_button(
+                        label=f"📥 Download {entry_id}", 
+                        data=str(entry), 
+                        file_name=f"report_{entry_id}.txt"
+                    )
         else:
             st.info("No records in database.")
+            
     except Exception as e:
-        st.error(f"Database Error: {e}")
+        st.error(f"Sidebar Error: {e}")
