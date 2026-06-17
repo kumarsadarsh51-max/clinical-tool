@@ -104,19 +104,15 @@ Please consult an oncologist for verification.
 
     # Update your insert block to this:
 try:
-            # 1. Execute
             response = supabase.schema('public').table("patient_history").insert(db_record).execute()
             
-            # --- ADD THIS LINE TO SEE THE DEBUG DATA ---
-            st.write("DEBUG RESPONSE DATA:", response.data)
-            # ---------------------------------------------
-            
-            if len(response.data) > 0:
+            # The 'error' object is the key to why it's failing
+            if response.data:
                 st.success("✅ Saved to database!")
-                time.sleep(1)
                 st.rerun()
             else:
-                st.error("Error: Database returned no data. Check your Policy permissions.")
+                st.error(f"Save failed! Database error: {response.error}")
+                
         except Exception as e:
             st.error(f"Exception: {e}")
     
