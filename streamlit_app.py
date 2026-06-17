@@ -215,27 +215,6 @@ with st.sidebar:
                         mime="text/csv"
                     )
                     
-                    st.divider()
-                    st.caption("Patient Trend Overview")
-                    
-                    # Trend Analysis
-                    patient_records = [h for h in history if h['patient_name'] == entry['patient_name']]
-                    plot_data = []
-                    for rec in patient_records:
-                        try:
-                            data_dict = ast.literal_eval(rec['raw_data'])
-                            data_dict['Date'] = pd.to_datetime(rec['timestamp'], format='%d-%m-%Y/%H:%M')
-                            plot_data.append(data_dict)
-                        except:
-                            continue
-                    
-                    if len(plot_data) > 1:
-                        df = pd.DataFrame(plot_data).sort_values('Date')
-                        markers = [m for m in df.columns if m != 'Date']
-                        selected_marker = st.selectbox(f"Select marker for {entry.get('patient_name')}", markers, key=f"trend_{entry.get('id')}")
-                        st.line_chart(df.set_index('Date')[selected_marker])
-                    else:
-                        st.info("Not enough data to show trends yet.")
     except Exception as e:
         st.error(f"DB Load Error: {e}")
         
