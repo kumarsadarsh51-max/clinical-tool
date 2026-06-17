@@ -105,14 +105,14 @@ Please consult an oncologist for verification.
         "raw_data": dict(zip(info["names"], X_raw))
     }
 
-    try:
-        # Save directly to Supabase
-        supabase.table("patient_history").insert(db_record).execute()
-        st.success("✅ Report saved to database!")
-        st.rerun()
-                
-    except Exception as e:
-        st.error(f"Database error: {e}")
+    # Update your insert block to this:
+try:
+    response = supabase.table("patient_history").insert(db_record).execute()
+    print("DEBUG: Supabase Response:", response) # Check this in the LOGS
+    st.success("✅ Saved!")
+    st.rerun()
+except Exception as e:
+    st.error(f"Error: {e}")
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
