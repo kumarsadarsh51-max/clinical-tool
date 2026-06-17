@@ -154,6 +154,10 @@ with st.sidebar:
         if not history:
             st.info("No records logged.")
         else:
+            df = pd.DataFrame(history)
+        
+        for entry in history:
+            with st.expander(f"Patient: {entry['patient_name']} ({entry['id']})"):
             for entry in history:
                 # Use LOWERCASE keys to match the database
                 with st.expander(f"Patient: {entry['patient_name']} ({entry['id']})"):
