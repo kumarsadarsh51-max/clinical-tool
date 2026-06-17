@@ -36,6 +36,39 @@ supabase = create_client(url, key)
 def clear_report():
     st.session_state.report_content = None
 
+# CONVERT TO PDF
+from fpdf import FPDF
+
+def generate_pdf(entry):
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Header
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, txt="HOSPITAL CLINICAL LABORATORY", ln=True, align='C')
+    pdf.set_font("Arial", size=12)
+    pdf.ln(10)
+    
+    # Patient Details
+    pdf.cell(200, 10, txt=f"Patient Name: {entry['patient_name']}", ln=True)
+    pdf.cell(200, 10, txt=f"Patient ID: {entry.get('patient_id', 'N/A')}", ln=True)
+    pdf.cell(200, 10, txt=f"Date: {entry['timestamp']}", ln=True)
+    pdf.ln(5)
+    
+    # Risk Assessment
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(200, 10, txt=f"Test Type: {entry['cancer_type'].upper()} RISK ASSESSMENT", ln=True)
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt=f"Final Risk Score: {entry['risk_score']}", ln=True)
+    pdf.ln(10)
+    
+    # Raw Data
+    pdf.cell(200, 10, txt="Clinical Markers:", ln=True)
+    pdf.set_font("Courier", size=10)
+    pdf.multi_cell(0, 10, txt=str(entry['raw_data']))
+    
+    return pdf.output(dest='S') # Returns the PDF as a string/bytes
+
 # --- Logic Functions ---
 def raw_to_norm(x, cutoff=1.0):
     if x <= 0: return 0.0
