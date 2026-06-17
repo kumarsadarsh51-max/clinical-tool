@@ -115,35 +115,25 @@ except Exception as e:
     st.error(f"Error: {e}")
     
 # --- Sidebar History Log ---
-if 'refresh_count' not in st.session_state:
-    st.session_state.refresh_count = 0
+# --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
-    st.container(key=f"sidebar_content_{st.session_state.refresh_count}")
     try:
+        # Ensure the table name 'patient_history' matches your Supabase database exactly
         response = supabase.table("patient_history").select("*").order("id", desc=True).execute()
+        history = response.data
         
-        if response.data:
-            history = response.data
-            # Convert to DataFrame for CSV
-            df = pd.DataFrame(history)
-            
+        if not history:
+            st.info("No records found.")
+        else:
             for entry in history:
                 entry_id = entry.get('id', 'N/A')
+                # Ensure the code below is properly indented under 'with'
                 with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')} ({entry_id})"):
-        st.write(f"**Date:** {entry.get('timestamp')}")
-        st.write(f"**Risk Score:** {entry.get('risk_score')}")
-        st.write(f"**Raw Data:** {entry.get('raw_data')}") # Display as text string
-                    
-                    # Button inside the loop
+                    st.write(f"**Date:** {entry.get('timestamp')}")
+                    st.write(f"**Risk Score:** {entry.get('risk_score')}")
+                    # Ensure all indented code here is aligned
                     report_text = f"Report for {entry.get('patient_name')}\nID: {entry_id}"
-                    st.download_button(f"📥 Download {entry_id}", report_text, f"report_{entry_id}.txt")
-
-            # CSV Export
-            csv_buffer = io.StringIO()
-            df.to_csv(csv_buffer, index=False)
-            st.download_button("📥 Download Full History (CSV)", csv_buffer.getvalue(), "history.csv", "text/csv")
-        else:
-            st.info("No records in database.")
+                    st.download_button(label=f"📥 Download {entry_id}", data=report_text, file_name=f"report_{entry_id}.txt")
     except Exception as e:
-        st.error(f"Database Error: {e}")
+        st.error(f"DB Load Error: {e}")
