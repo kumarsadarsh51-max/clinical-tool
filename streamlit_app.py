@@ -1,14 +1,11 @@
-from supabase import create_client
-import streamlit as st
 import streamlit as st
 import numpy as np
 import datetime
-import pandas as pd
-import io
-import datetime
+import time
 from zoneinfo import ZoneInfo
-import random 
-import string 
+from supabase import create_client
+# --- Setup ---
+# Ensure these secrets are in your Streamlit Cloud "Settings > Secrets"
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
@@ -95,31 +92,26 @@ Please consult an oncologist for verification.
        
        
    # Generate ID and save directly
-    db_record = {
-        "timestamp": formatted_time,
+   db_record = {
+        "timestamp": datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M'),
         "patient_name": patient_name,
         "cancer_type": cancer,
         "risk_score": f"{y_final:.2%}",
         "raw_data": str(dict(zip(info["names"], X_raw)))
     }
-
-    # Update your insert block to this:
-try:
-    response = supabase.table("patient_history").insert(db_record).execute()
-    st.success("✅ Saved!")
-    st.session_state.refresh_count += 1
-    # The sleep ensures the DB has time to write before the refresh
-    import time
-    time.sleep(2) 
-    st.rerun() 
-except Exception as e:
-    st.error(f"Error: {e}")
     
-# --- Sidebar History Log ---
+    try:
+        supabase.table("patient_history").insert(db_record).execute()
+        st.success("✅ Report saved!")
+        time.sleep(1)
+        st.rerun()
+    except Exception as e:
+        st.error(f"Save error: {e}")    
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
     try:
+        # Check this table name exactly in your dashboard
         response = supabase.table("patient_history").select("*").order("id", desc=True).execute()
         history = response.data
         
@@ -127,11 +119,8 @@ with st.sidebar:
             st.info("No records found.")
         else:
             for entry in history:
-                entry_id = entry.get('id', 'N/A')
-                with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')} ({entry_id})"):
+                with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')}"):
                     st.write(f"**Date:** {entry.get('timestamp')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                    report_text = f"Report for {entry.get('patient_name')}\nID: {entry_id}"
-                    st.download_button(label=f"📥 Download {entry_id}", data=report_text, file_name=f"report_{entry_id}.txt")
     except Exception as e:
         st.error(f"DB Load Error: {e}")
