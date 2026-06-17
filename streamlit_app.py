@@ -86,24 +86,25 @@ if st.button("Generate Diagnostic Report"):
             except Exception as e:
                 st.error(f"Save error: {e}")
 # --- Sidebar History Log ---
-# --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
     try:
-        # Fetching data
         response = supabase.table("patient_history").select("*").execute()
         history = response.data
-        
         if not history:
             st.info("No records found.")
         else:
             for entry in history:
-                with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')}"):
+                # Update this line to include more context:
+                title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
+                
+                with st.expander(title):
                     st.write(f"**Date:** {entry.get('timestamp')}")
+                    st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
+                    st.write(f"**Raw Data:** {entry.get('raw_data')}")
     except Exception as e:
         st.error(f"DB Load Error: {e}")
-
 # --- Clear History Button ---
     if st.button("🗑️ Clear All History"):
         try:
