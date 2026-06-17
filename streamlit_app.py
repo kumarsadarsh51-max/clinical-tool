@@ -205,15 +205,6 @@ with st.sidebar:
                         st.write(f"**Risk Score:** {entry.get('risk_score')}")
                         
                     
-                    # Define csv_data inside the loop so it's always available for this entry
-                    csv_string = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{entry.get('raw_data')}\""
-                    
-                    st.download_button(
-                        label="📥 Download as CSV",
-                        data=csv_string,
-                        file_name=f"report_{entry.get('patient_name')}_{entry.get('timestamp').replace('/', '-')}.csv",
-                        mime="text/csv"
-                    )
                     
     except Exception as e:
         st.error(f"DB Load Error: {e}")
