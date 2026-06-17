@@ -2,9 +2,6 @@ import streamlit as st
 import numpy as np
 import datetime
 from zoneinfo import ZoneInfo
-formatted_time = import datetime
-from zoneinfo import ZoneInfo
-formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
 from supabase import create_client
 
 # --- Initialize Supabase ---
@@ -65,7 +62,7 @@ if st.button("Generate Diagnostic Report"):
     if not patient_name or cancer == "--select--":
         st.error("Please fill in all fields.")
     else:
-       current_click_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
+       formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
         
         # Create Hospital Style Report
         report_content = f"""
