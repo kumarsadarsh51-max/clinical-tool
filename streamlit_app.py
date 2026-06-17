@@ -110,7 +110,6 @@ try:
     # The sleep ensures the DB has time to write before the refresh
     import time
     time.sleep(2) 
-    st.rerun() 
 except Exception as e:
     st.error(f"Error: {e}")
     
