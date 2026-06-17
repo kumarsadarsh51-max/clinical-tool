@@ -41,6 +41,8 @@ if st.button("Generate Diagnostic Report"):
         st.error("Please enter a patient name first.")
     elif cancer == "--select--":
         st.error("Please select a valid cancer type.")
+    elif:
+        formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
     else:
         # Calculation Logic
         X_norm = np.array([raw_to_norm(X_raw[i], info["cutoffs"][i]) for i in range(len(info["cutoffs"]))])
@@ -91,10 +93,8 @@ Please consult an oncologist for verification.
         # Display on Screen (Kept exactly as requested)
         st.subheader("Diagnostic Report Preview")
         st.text(report_content)
-       
-       
-   # Generate ID and save directly
-    db_record = {
+        
+        db_record = {
         "timestamp": formatted_time,
         "patient_name": patient_name,
         "cancer_type": cancer,
