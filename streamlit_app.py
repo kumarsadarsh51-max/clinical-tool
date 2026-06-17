@@ -182,7 +182,7 @@ with st.sidebar:
                     # 3. Create Side-by-Side Buttons
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.download_button("📥 Text", text_report, f"report_{entry.get('patient_name')}.txt", "text/plain")
+                        st.download_button("📥 Report", text_report, f"report_{entry.get('patient_name')}.txt", "text/plain")
                     with col2:
                         st.download_button("📥 CSV", csv_content, f"report_{entry.get('patient_name')}.csv", "text/csv")
                         
