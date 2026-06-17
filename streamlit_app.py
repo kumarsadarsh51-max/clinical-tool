@@ -95,7 +95,7 @@ st.text(report_content)
    # Generate ID and save directly
     # 2. Prepare Data
 formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
-    db_record = {
+db_record = {
             "timestamp": formatted_time,
             "patient_name": patient_name,
             "cancer_type": cancer,
@@ -104,16 +104,16 @@ formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m
         }
 
         # 3. Save to DB
-        try:
-            supabase.schema('public').table("patient_history").insert(db_record).execute()
-            st.success(f"✅ Report saved! Risk Score: {y_final:.2%}")
+try:
+    supabase.schema('public').table("patient_history").insert(db_record).execute()
+    st.success(f"✅ Report saved! Risk Score: {y_final:.2%}")
             
-            # Wipe form
-            st.session_state.p_name = ""
-            st.session_state.c_type = "--select--"
-            st.rerun() 
-        except Exception as e:
-            st.error(f"Save error: {e}")
+     # Wipe form
+     st.session_state.p_name = ""
+     st.session_state.c_type = "--select--"
+     st.rerun() 
+except Exception as e:
+    st.error(f"Save error: {e}")
 
 # --- Sidebar History Log ---
 with st.sidebar:
