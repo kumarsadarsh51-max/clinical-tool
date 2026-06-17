@@ -139,6 +139,7 @@ Please consult an oncologist for verification.
         supabase.table("patient_history").insert(db_record).execute()
         st.toast("Report saved to database!", icon="✅")
         st.success("✅ Report generated and saved to history!")
+        st.rerun()
     except Exception as e:
         st.error(f"Database error: {e}")
         
