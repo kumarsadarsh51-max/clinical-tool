@@ -65,7 +65,7 @@ if st.button("Generate Diagnostic Report"):
        formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
         
         # Create Hospital Style Report
-        report_content = f"""
+report_content = f"""
 ==================================================
            HOSPITAL CLINICAL LABORATORY           
 ==================================================
