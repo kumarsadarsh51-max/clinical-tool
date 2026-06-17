@@ -106,8 +106,13 @@ Please consult an oncologist for verification.
 try:
     response = supabase.table("patient_history").insert(db_record).execute()
     print("DEBUG: Supabase Response:", response) # Check this in the LOGS
-    st.success("✅ Saved!")
-    st.rerun()
+    if response:
+        st.success("✅ Report saved to database ")
+        import time
+        time.sleep(2)
+        st.rerun()
+    else:
+        st.error("Database did not return a success response.")
 except Exception as e:
     st.error(f"Error: {e}")
 # --- Sidebar History Log ---
