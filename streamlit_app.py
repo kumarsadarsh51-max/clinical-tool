@@ -223,34 +223,26 @@ with st.sidebar:
                 st.warning("No records match these filters.")
             else:
                 for entry in filtered_history:
-                    title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
+                # SAFE DATA HANDLING: Ensure we have a string, not binary
+                raw = entry.get('raw_data', '')
+                if isinstance(raw, (bytes, bytearray)):
+                    raw = raw.decode('utf-8')
                     
-                    with st.expander(title):
-                        st.write(f"**Date:** {entry.get('timestamp')}")
-                        st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
-                        st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                        
-                        # --- EXPORT OPTIONS (Inside the expander) ---
-                        col_pdf, col_csv = st.columns(2)
-                        
-                        with col_pdf:
-                            pdf_bytes = generate_pdf(entry)
-                            st.download_button(
-                                label="📥 PDF",
-                                data=pdf_bytes,
-                                file_name=f"report_{entry.get('patient_name')}.pdf",
-                                mime="application/pdf"
-                            )
-                            
-                        with col_csv:
-                            csv_string = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{entry.get('raw_data')}\""
-                            st.download_button(
-                                label="📥 CSV",
-                                data=csv_string,
-                                file_name=f"report_{entry.get('patient_name')}.csv",
-                                mime="text/csv"
-                            )
-
+                title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
+                
+                with st.expander(title):
+                    st.write(f"**Date:** {entry.get('timestamp')}")
+                    st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
+                    st.write(f"**Risk Score:** {entry.get('risk_score')}")
+                    st.write(f"**Patient ID:** {entry.get('patient_id', 'N/A')}") # Added ID display
+                    
+                    # --- EXPORT OPTIONS ---
+                    col_pdf, col_csv = st.columns(2)
+                    with col_pdf:
+                        pdf_bytes = generate_pdf(entry)
+                        st.download_button("📥 PDF", pdf_bytes, f"report_{entry.get('patient_name')}.pdf", "application/pdf")
+                    with col_csv:
+                        st.download_button("📥 CSV", f"Patient,Date\n{entry.get('patient_name')},{entry.get('timestamp')}", f"report_{entry.get('patient_name')}.csv", "text/csv")
     except Exception as e:
         st.error(f"DB Load Error: {e}")
 
