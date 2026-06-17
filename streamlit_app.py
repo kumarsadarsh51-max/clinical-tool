@@ -59,8 +59,7 @@ if st.button("Generate Diagnostic Report"):
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
-    try:
-        response = supabase.table("patient_history").select("*").order("id", desc=True).execute()
+    try:response = supabase.table("patient_history").select("*").execute()
         history = response.data
         if not history:
             st.info("No records found.")
