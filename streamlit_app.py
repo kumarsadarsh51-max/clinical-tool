@@ -78,7 +78,7 @@ Clinical Markers:
 for i, name in enumerate(info["names"]):
     report_content += f"- {name}: {X_raw[i]}\n"
 
-        report_content += f"""
+    report_content += f"""
 --------------------------------------------------
 FINAL RISK SCORE: {y_final:.2%}
 --------------------------------------------------
