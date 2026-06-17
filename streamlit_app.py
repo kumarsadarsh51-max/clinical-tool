@@ -66,15 +66,24 @@ if st.button("Generate Diagnostic Report"):
                 st.write(f"**Raw Data:** {duplicate.get('raw_data')}")
         else:
             # Proceed with normal save logic
+            # 1. Normalize data
             X_norm = np.array([raw_to_norm(X_raw[i], info["cutoffs"][i]) for i in range(len(info["cutoffs"]))])
-            y_final = 0.5
+            
+            # 2. Update Risk Calculation Logic
+            # Example: A simple average of normalized markers. 
+            # You can apply weights here if some markers are more significant.
+            # To set a 5% baseline, you might adjust the calculation like this:
+            base_risk = 0.05
+            calculated_risk = np.mean(X_norm) 
+            y_final = base_risk + (calculated_risk * 0.95) # Scales risk up from the 5% base
+            
             formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
             
             db_record = {
                 "timestamp": formatted_time, 
                 "patient_name": patient_name, 
                 "cancer_type": cancer, 
-                "risk_score": f"{y_final:.2%}", 
+                "risk_score": f"{y_final:.2%}", # This will now reflect the calculated value
                 "raw_data": current_data["raw_data"]
             }
             
