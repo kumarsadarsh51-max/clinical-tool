@@ -104,13 +104,20 @@ Please consult an oncologist for verification.
 
     # Update your insert block to this:
 try:
-    response = supabase.table("patient_history").insert(db_record).execute()
-    st.success("✅ Saved to database")
-    # The sleep ensures the DB has time to write before the refresh
-    import time
-    time.sleep(2) 
-except Exception as e:
-    st.error(f"Error: {e}")
+            # 1. Execute the insert and capture the response
+            response = supabase.table("patient_history").insert(db_record).execute()
+            
+            # 2. Check if the database actually returned a record
+            if response.data or response.status_code in [200, 201]:
+                st.success("✅ Report successfully committed to Supabase!")
+                import time
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error(f"Database rejected the save. Response: {response}")
+                
+        except Exception as e:
+            st.error(f"Exception during save: {e}")
     
 # --- Sidebar History Log ---
 with st.sidebar:
