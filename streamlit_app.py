@@ -104,18 +104,18 @@ Please consult an oncologist for verification.
 
     # Update your insert block to this:
 try:
+            # Save to Supabase
             response = supabase.schema('public').table("patient_history").insert(db_record).execute()
             
-            # The 'error' object is the key to why it's failing
-            if response.data:
-                st.success("✅ Saved to database!")
-                st.rerun()
-            else:
-                st.error(f"Save failed! Database error: {response.error}")
-                
+            # Instead of st.rerun(), use a session state flag to trigger a reload
+            st.session_state.data_saved = True
+            st.success("✅ Report saved! Data will appear in sidebar shortly.")
         except Exception as e:
-            st.error(f"Exception: {e}")
-    
+            st.error(f"Database error: {e}")
+# This ensures the sidebar refreshes only when data_saved is True
+if st.session_state.get("data_saved", False):
+    st.session_state.data_saved = False # Reset flag
+    st.rerun() # Refresh once, safely
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
