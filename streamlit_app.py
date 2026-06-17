@@ -174,35 +174,34 @@ with st.sidebar:
                         mime="text/csv"
                     )
                    st.divider()
-        st.caption("Patient Trend Overview")
+                   st.caption("Patient Trend Overview")
         
-        # 1. Filter all history for THIS patient
-        patient_records = [h for h in history if h['patient_name'] == entry['patient_name']]
+                   # 1. Filter all history for THIS patient
+                   patient_records = [h for h in history if h['patient_name'] == entry['patient_name']]
         
-        # 2. Convert to DataFrame
-        import pandas as pd
-        import ast
+                   # 2. Convert to DataFrame
+                   import pandas as pd
+                   import ast
         
-        plot_data = []
-        for rec in patient_records:
-            try:
-                # Convert string representation of dict back to dict
-                data_dict = ast.literal_eval(rec['raw_data'])
-                data_dict['Date'] = pd.to_datetime(rec['timestamp'], format='%d-%m-%Y/%H:%M')
-                plot_data.append(data_dict)
-            except:
-                continue
-        
-        if len(plot_data) > 1:
-            df = pd.DataFrame(plot_data).sort_values('Date')
-            # Plot all markers
-            markers = [m for m in df.columns if m != 'Date']
-            selected_marker = st.selectbox(f"Select marker for {entry.get('patient_name')}", markers, key=f"trend_{entry.get('id')}")
-            st.line_chart(df.set_index('Date')[selected_marker])
-        else:
-            st.info("Not enough data to show trends yet.") 
+                   plot_data = []
+                   for rec in patient_records:
+                       try:
+                           # Convert string representation of dict back to dict
+                           data_dict = ast.literal_eval(rec['raw_data'])
+                           data_dict['Date'] = pd.to_datetime(rec['timestamp'], format='%d-%m-%Y/%H:%M')
+                           plot_data.append(data_dict)
+                       except:
+                           continue
+            
+            if len(plot_data) > 1:
+                df = pd.DataFrame(plot_data).sort_values('Date')
+                # Plot all markers
+                markers = [m for m in df.columns if m != 'Date']
+                selected_marker = st.selectbox(f"Select marker for {entry.get('patient_name')}", markers, key=f"trend_{entry.get('id')}")
+                st.line_chart(df.set_index('Date')[selected_marker])
+            else:
+                st.info("Not enough data to show trends yet.") 
 
-    
     except Exception as e:
         st.error(f"DB Load Error: {e}")
 # --- Clear History Button ---
