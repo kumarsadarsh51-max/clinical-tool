@@ -12,6 +12,7 @@ import string
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
+db_record = None
 # --- Logic Functions ---
 def raw_to_norm(x, cutoff=1.0):
     if x <= 0: return 0.0
@@ -124,16 +125,18 @@ with st.sidebar:
         history = response.data
         
         if not history:
-            st.info("No records found.")
+        st.info("No records found.")
         else:
             for entry in history:
-                entry_id = entry.get('id', 'N/A')
-                # Ensure the code below is properly indented under 'with'
+            # 1. Define entry_id FIRST
+                entry_id = entry.get('id', 'N/A') 
+            
+            # 2. Indent this block correctly under the 'for' loop
                 with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')} ({entry_id})"):
                     st.write(f"**Date:** {entry.get('timestamp')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                    # Ensure all indented code here is aligned
+                
+                    # Ensure this is inside the expander
                     report_text = f"Report for {entry.get('patient_name')}\nID: {entry_id}"
-                    st.download_button(label=f"📥 Download {entry_id}", data=report_text, file_name=f"report_{entry_id}.txt")
-    except Exception as e:
-        st.error(f"DB Load Error: {e}")
+                    st.download_button(label=f"📥 Download {entry_id}", data=report_text, file_name=f"report_{entry_id}.txt")    except Exception as e:
+                    st.error(f"DB Load Error: {e}")
