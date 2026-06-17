@@ -120,24 +120,18 @@ except Exception as e:
 with st.sidebar:
     st.title("📜 Patient History Log")
     try:
-        # Ensure the table name 'patient_history' matches your Supabase database exactly
         response = supabase.table("patient_history").select("*").order("id", desc=True).execute()
         history = response.data
         
         if not history:
-        st.info("No records found.")
+            st.info("No records found.")
         else:
             for entry in history:
-            # 1. Define entry_id FIRST
-                entry_id = entry.get('id', 'N/A') 
-            
-            # 2. Indent this block correctly under the 'for' loop
+                entry_id = entry.get('id', 'N/A')
                 with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')} ({entry_id})"):
                     st.write(f"**Date:** {entry.get('timestamp')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                
-                    # Ensure this is inside the expander
                     report_text = f"Report for {entry.get('patient_name')}\nID: {entry_id}"
-                    st.download_button(label=f"📥 Download {entry_id}", data=report_text, file_name=f"report_{entry_id}.txt")    
+                    st.download_button(label=f"📥 Download {entry_id}", data=report_text, file_name=f"report_{entry_id}.txt")
     except Exception as e:
-                    st.error(f"DB Load Error: {e}")
+        st.error(f"DB Load Error: {e}")
