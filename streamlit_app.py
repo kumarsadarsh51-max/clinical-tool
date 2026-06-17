@@ -94,14 +94,10 @@ Please consult an oncologist for verification.
         # Display on Screen (Kept exactly as requested)
         st.subheader("Diagnostic Report Preview")
         st.text(report_content)
-        # Generate a random ID like 'P-4X9B2'
-        random_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-        unique_id = f"P-{random_suffix}-{int(datetime.datetime.now().timestamp())}"
-
+       
        
    # Generate ID and save directly
     db_record = {
-        "id": unique_id,
         "timestamp": formatted_time,
         "patient_name": patient_name,
         "cancer_type": cancer,
