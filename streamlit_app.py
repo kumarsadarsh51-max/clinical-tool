@@ -118,27 +118,22 @@ except Exception as e:
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
-    
     try:
+        # Fetch data
         response = supabase.table("patient_history").select("*").order("id", desc=True).execute()
-        history = response.data
         
-        if not history:
-            st.info("No records in database.")
-        else:
-            # 1. Create the DataFrame for CSV export here
-            df = pd.DataFrame(history)
-            
-            # 2. Iterate and display
+        # Check if response.data exists and is not None
+        if response.data:
+            history = response.data
             for entry in history:
-                patient_name = entry.get('patient_name', 'Unknown')
-                entry_id = entry.get('id', 'N/A')
-                
-                with st.expander(f"Patient: {patient_name} ({entry_id})"):
+                with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')}"):
                     st.write(f"**Date:** {entry.get('timestamp')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
                     st.json(entry.get('raw_data', {}))
-                    
+        else:
+            st.info("No records in database.")
+    except Exception as e:
+        st.error(f"Database Error: {e}")                    
                     # 3. Create download button inside the loop
                     report_text = f"Report for {patient_name}\nID: {entry_id}\nScore: {entry.get('risk_score')}"
                     st.download_button(
