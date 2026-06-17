@@ -111,11 +111,9 @@ try:
 except Exception as e:
     st.error(f"Error: {e}")
 # --- Sidebar History Log ---
-# --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
     
-    # Force a fresh fetch from Supabase on every render
     try:
         response = supabase.table("patient_history").select("*").order("id", desc=True).execute()
         history = response.data
@@ -123,26 +121,31 @@ with st.sidebar:
         if not history:
             st.info("No records in database.")
         else:
+            # 1. Create the DataFrame for CSV export here
+            df = pd.DataFrame(history)
+            
+            # 2. Iterate and display
             for entry in history:
-                with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')}"):
+                patient_name = entry.get('patient_name', 'Unknown')
+                entry_id = entry.get('id', 'N/A')
+                
+                with st.expander(f"Patient: {patient_name} ({entry_id})"):
                     st.write(f"**Date:** {entry.get('timestamp')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
                     st.json(entry.get('raw_data', {}))
-    except Exception as e:
-        st.error(f"DB Load Error: {e}")
                     
-    report_text = f"Report for {entry.get('patient_name')}\nID: {entry.get('id')}\nScore: {entry.get('risk_score')}"
-    st.download_button(
-                        label=f"📥 Download {entry.get('id')}", 
+                    # 3. Create download button inside the loop
+                    report_text = f"Report for {patient_name}\nID: {entry_id}\nScore: {entry.get('risk_score')}"
+                    st.download_button(
+                        label=f"📥 Download {entry_id}", 
                         data=report_text, 
-                        file_name=f"report_{entry.get('id')}.txt"
+                        file_name=f"report_{entry_id}.txt"
                     )
 
-            # CSV Export
+            # 4. CSV Export
             csv_buffer = io.StringIO()
             df.to_csv(csv_buffer, index=False)
             st.download_button("📥 Download Full History (CSV)", csv_buffer.getvalue(), "history.csv", "text/csv")
             
     except Exception as e:
-        st.error("Could not load history from database.")
-        st.write(e)
+        st.error(f"DB Load Error: {e}")
