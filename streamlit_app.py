@@ -98,7 +98,7 @@ Please consult an oncologist for verification.
         random_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
         unique_id = f"P-{random_suffix}-{int(datetime.datetime.now().timestamp())}"
 
-        # Generate ID and save directly
+       
    # Generate ID and save directly
     db_record = {
         "id": unique_id,
@@ -106,19 +106,15 @@ Please consult an oncologist for verification.
         "patient_name": patient_name,
         "cancer_type": cancer,
         "risk_score": f"{y_final:.2%}",
-        "raw_data": str(dict(zip(info["names"], X_raw)))
+        "raw_data": dict(zip(info["names"], X_raw))
     }
 
     try:
         # Save directly to Supabase
         supabase.table("patient_history").insert(db_record).execute()
         st.success("✅ Report saved to database!")
-        
-        # Add a short delay then refresh
-        import time
-        time.sleep(1)
         st.rerun()
-        
+                
     except Exception as e:
         st.error(f"Database error: {e}")
 # --- Sidebar History Log ---
