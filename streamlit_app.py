@@ -159,6 +159,16 @@ with st.sidebar:
                     st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
                     st.write(f"**Raw Data:** {entry.get('raw_data')}")
+                    # TO DOWNLOAD EACH DATA
+                    csv_data = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{entry.get('raw_data')}\""
+                    st.download_button(
+                        label="📥 Download as CSV",
+                        data=csv_data,
+                        file_name=f"report_{entry.get('patient_name')}_{entry.get('timestamp').replace('/', '-')}.csv",
+                        mime="text/csv"
+                    )
+
+    
     except Exception as e:
         st.error(f"DB Load Error: {e}")
 # --- Clear History Button ---
