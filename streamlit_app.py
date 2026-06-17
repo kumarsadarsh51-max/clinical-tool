@@ -143,6 +143,9 @@ Please consult an oncologist for verification.
 if "report_content" in st.session_state and st.session_state.report_content:
     st.subheader("Diagnostic Report Preview")
     st.text(st.session_state.report_content)
+    if st.button("Clear Preview"):
+        st.session_state.report_content = None
+        st.rerun()
 
 # --- Sidebar History Log ---
 with st.sidebar:
