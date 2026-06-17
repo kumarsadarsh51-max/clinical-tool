@@ -107,20 +107,16 @@ try:
             # 1. Execute
             response = supabase.table("patient_history").insert(db_record).execute()
             
-            # 2. THE CRITICAL CHECK: 
-            # If Supabase returns data, the insert worked. 
-            # If it returns empty data, something is wrong.
-            st.write("DEBUG Response:", response.data) 
-            
-            if response.data is not None:
-                st.success("✅ Database confirmed save!")
-                time.sleep(1)
+            # 2. Check response
+            if len(response.data) > 0:
+                st.success("✅ Saved to database!")
+                time.sleep(1) # Give Supabase breathing room
                 st.rerun()
             else:
-                st.error("Database error: No data returned from insert.")
-                
+                # If we reach here, the database ignored the insert
+                st.error("Error: Database returned no data. Check your Policy permissions.")
         except Exception as e:
-            st.error(f"Full Exception: {e}")
+            st.error(f"Exception: {e}")
     
 # --- Sidebar History Log ---
 with st.sidebar:
