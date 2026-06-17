@@ -137,13 +137,7 @@ Please consult an oncologist for verification.
             except Exception as e:
                 st.error(f"Save error: {e}")
 
-# --- Display the persistent bill (Place this AFTER the Generate button block) ---
-if "report_content" in st.session_state and st.session_state.report_content:
-    st.subheader("Diagnostic Report Preview")
-    st.text(st.session_state.report_content)
-    if st.button("Clear Preview"):
-        st.session_state.report_content = None
-        st.rerun()
+
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
