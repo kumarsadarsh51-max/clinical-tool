@@ -107,11 +107,10 @@ db_record = {
 try:
     supabase.schema('public').table("patient_history").insert(db_record).execute()
     st.success(f"✅ Report saved! Risk Score: {y_final:.2%}")
-            
      # Wipe form
-     st.session_state.p_name = ""
-     st.session_state.c_type = "--select--"
-     st.rerun() 
+    st.session_state.p_name = ""
+    st.session_state.c_type = "--select--"
+    st.rerun() 
 except Exception as e:
     st.error(f"Save error: {e}")
 
