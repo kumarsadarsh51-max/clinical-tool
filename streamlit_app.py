@@ -180,20 +180,19 @@ if "report_content" in st.session_state and st.session_state.report_content:
         st.session_state.report_content = None
         st.rerun()
 # --- Sidebar History Log ---
-# --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
     try:
+        # Fetch history from Supabase
         response = supabase.table("patient_history").select("*").execute()
         history = response.data
+        
         if not history:
             st.info("No records found.")
         else:
             for entry in history:
-                # 1. FIX: Safely convert binary data to string
-                raw_data = entry.get('raw_data', '')
-                if isinstance(raw_data, (bytes, bytearray)):
-                    raw_data = raw_data.decode('utf-8')
+                # SAFE STRING CONVERSION: Force entry to string to avoid binary errors
+                raw_data = str(entry.get('raw_data', ''))
                 
                 entry_id = entry.get('id', 'unknown')
                 title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
@@ -204,15 +203,16 @@ with st.sidebar:
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
                     st.write(f"**Raw Data:** {raw_data}")
                     
+                    # Layout for buttons
                     col1, col2 = st.columns(2)
                     
                     with col1:
-                        # CSV DOWNLOAD
+                        # CSV Download
                         csv_content = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{raw_data}\""
                         st.download_button("📥 CSV", csv_content, f"report_{entry.get('patient_name')}.csv", "text/csv", key=f"csv_{entry_id}")
                     
                     with col2:
-                        # PDF DOWNLOAD
+                        # PDF Download
                         pdf_bytes = generate_pdf(entry)
                         st.download_button("📥 PDF", pdf_bytes, f"report_{entry.get('patient_name')}.pdf", "application/pdf", key=f"pdf_{entry_id}")
                         
