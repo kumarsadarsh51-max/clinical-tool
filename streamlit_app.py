@@ -145,43 +145,40 @@ Please consult an oncologist for verification.
         st.write("DEBUG INFO:", db_record) # This will print the data being sent
         
 # --- Sidebar History Log ---
+# --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
-        
-        response = supabase.table("patient_history").select("*").order("timestamp", desc=True).execute()
-        history = response.data
-        
-        if not history:
-            st.info("No records logged.")
-        else:
-            df = pd.DataFrame(history)
-        
+    
+    response = supabase.table("patient_history").select("*").order("timestamp", desc=True).execute()
+    history = response.data
+    
+    if not history:
+        st.info("No records logged.")
+    else:
+        df = pd.DataFrame(history)
         for entry in history:
+            # Use the correct lowercase keys
             with st.expander(f"Patient: {entry['patient_name']} ({entry['id']})"):
-            for entry in history:
-                # Use LOWERCASE keys to match the database
-                with st.expander(f"Patient: {entry['patient_name']} ({entry['id']})"):
-                    st.write(f"**Date:** {entry['timestamp']}")
-                    st.write(f"**Risk Score:** {entry['risk_score']}")
-                    st.write(f"**Cancer Type:** {entry['cancer_type']}")
-                    st.json(entry['raw_data'])
-                    
-                    # Update download button to use correct keys
-                    report_text = f"Report for {entry['patient_name']}\nID: {entry['id']}\nScore: {entry['risk_score']}"
-                    st.download_button(
-                        label=f"📥 Download {entry['id']}", 
-                        data=report_text, 
-                        file_name=f"{entry['patient_name']}_{entry['id']}.txt", 
-                        mime="text/plain"
-                    )
+                st.write(f"**Date:** {entry['timestamp']}")
+                st.write(f"**Risk Score:** {entry['risk_score']}")
+                st.write(f"**Cancer Type:** {entry['cancer_type']}")
+                st.json(entry['raw_data'])
+                
+                report_text = f"Report for {entry['patient_name']}\nID: {entry['id']}\nScore: {entry['risk_score']}"
+                st.download_button(
+                    label=f"📥 Download {entry['id']}", 
+                    data=report_text, 
+                    file_name=f"{entry['patient_name']}_{entry['id']}.txt", 
+                    mime="text/plain"
+                )
 
         # CSV Export
         col1, col2 = st.columns(2)
         csv_buffer = io.StringIO()
         df.to_csv(csv_buffer, index=False)
         col1.download_button("📥 CSV", csv_buffer.getvalue(), "history.csv", "text/csv")
-
-        # Clear History
+        
         if col2.button("🗑️ Clear"):
+            # Note: This only clears session state, NOT the database!
             st.session_state.patient_history = []
             st.rerun()
