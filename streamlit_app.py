@@ -125,27 +125,30 @@ Please consult an oncologist for verification.
             st.text(report_content)
        
         else:
-            db_record = {
-        "id": unique_id,
-        "timestamp": formatted_time,
-        "patient_name": patient_name,
-        "cancer_type": cancer,
-        "risk_score": f"{y_final:.2%}",
-        "raw_data": str(dict(zip(info["names"], X_raw))) 
-    }
+        db_record = {
+            "id": unique_id, 
+            "timestamp": formatted_time, 
+            "patient_name": patient_name, 
+            "cancer_type": cancer, 
+            "risk_score": f"{y_final:.2%}", 
+            "raw_data": str(dict(zip(info["names"], X_raw))) 
+        }
 
-    # 2. Insert into Supabase
-    try:
-        supabase.table("patient_history").insert(db_record).execute()
-        st.toast("Report saved to database!", icon="✅")
-        st.success("✅ Report generated and saved to history!")
-        import time
-        time.sleep(1)
-        st.rerun()
-    except Exception as e:
-        st.error(f"Database error: {str(e)}")
-        st.write("DEBUG INFO:", db_record) # This will print the data being sent
-        
+        try:
+            # Execute the insert and wait for a response
+            response = supabase.table("patient_history").insert(db_record).execute()
+            
+            # Check if the response actually contains data
+            if response.data or response.status_code in [200, 201]:
+                st.success("✅ Report saved to database!")
+                # Add a deliberate delay to ensure the database processes the write
+                import time
+                time.sleep(2) 
+                st.rerun()
+            else:
+                st.error("Database error: Record was not saved.")
+        except Exception as e:
+            st.error(f"Database error: {str(e)}")        
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
