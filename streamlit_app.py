@@ -75,8 +75,8 @@ Test Type    : {cancer.upper()} RISK ASSESSMENT
 --------------------------------------------------
 Clinical Markers:
 """
-    for i, name in enumerate(info["names"]):
-            report_content += f"- {name}: {X_raw[i]}\n"
+for i, name in enumerate(info["names"]):
+    report_content += f"- {name}: {X_raw[i]}\n"
 
         report_content += f"""
 --------------------------------------------------
