@@ -105,7 +105,7 @@ Please consult an oncologist for verification.
     # Update your insert block to this:
 try:
     response = supabase.table("patient_history").insert(db_record).execute()
-    st.success("✅ Saved!")
+    st.success("✅ Saved to database")
     # The sleep ensures the DB has time to write before the refresh
     import time
     time.sleep(2) 
