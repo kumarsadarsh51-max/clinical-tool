@@ -180,6 +180,7 @@ if "report_content" in st.session_state and st.session_state.report_content:
         st.session_state.report_content = None
         st.rerun()
 # --- Sidebar History Log ---
+# --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
     try:
@@ -189,7 +190,11 @@ with st.sidebar:
             st.info("No records found.")
         else:
             for entry in history:
-                # Use entry ID for the key to ensure buttons don't conflict
+                # 1. FIX: Safely convert binary data to string
+                raw_data = entry.get('raw_data', '')
+                if isinstance(raw_data, (bytes, bytearray)):
+                    raw_data = raw_data.decode('utf-8')
+                
                 entry_id = entry.get('id', 'unknown')
                 title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
                 
@@ -197,35 +202,28 @@ with st.sidebar:
                     st.write(f"**Date:** {entry.get('timestamp')}")
                     st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                    st.write(f"**Raw Data:** {entry.get('raw_data')}")
+                    st.write(f"**Raw Data:** {raw_data}")
                     
-                    # create two columns
                     col1, col2 = st.columns(2)
+                    
                     with col1:
-                        # CSV FILE DOWNLAOD
-                        csv_content = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{entry.get('raw_data')}\""
+                        # CSV DOWNLOAD
+                        csv_content = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{raw_data}\""
                         st.download_button("📥 CSV", csv_content, f"report_{entry.get('patient_name')}.csv", "text/csv", key=f"csv_{entry_id}")
-
+                    
                     with col2:
                         # PDF DOWNLOAD
                         pdf_bytes = generate_pdf(entry)
                         st.download_button("📥 PDF", pdf_bytes, f"report_{entry.get('patient_name')}.pdf", "application/pdf", key=f"pdf_{entry_id}")
-                    
-                    # 2. Add the Download Button
-                    st.download_button(
-                        label="📥 Download as CSV",
-                        data=csv_content,
-                        file_name=f"report_{entry.get('patient_name')}_{entry.get('timestamp').replace('/', '-').replace(':', '-')}.csv",
-                        mime="text/csv",
-                        key=f"download_{entry_id}"
-                    )
+                        
     except Exception as e:
-        st.error(f"DB Load Error: {e}")# --- Clear History Button ---
+        st.error(f"DB Load Error: {e}")
+
+    # --- Clear History Button ---
     if st.button("🗑️ Clear All History"):
         try:
-            # Delete all rows in the table
             supabase.table("patient_history").delete().neq("id", 0).execute()
             st.success("History cleared!")
-            st.rerun() # Refresh to update the UI
+            st.rerun()
         except Exception as e:
             st.error(f"Error clearing history: {e}")
