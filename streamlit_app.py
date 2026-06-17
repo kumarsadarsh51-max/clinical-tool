@@ -5,6 +5,17 @@ import time
 from zoneinfo import ZoneInfo
 from supabase import create_client
 
+# Reset trigger
+if "reset_form" not in st.session_state:
+    st.session_state.reset_form = False
+
+# If the flag is set, clear the session state keys for the widgets
+if st.session_state.reset_form:
+    st.session_state.patient_name = ""
+    for name in info["names"]:
+        st.session_state[f"marker_{name}"] = 0.0
+    st.session_state.reset_form = False # Reset the flag
+
 # --- Setup ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
@@ -115,9 +126,7 @@ Please consult an oncologist for verification.
             try:
                 supabase.table("patient_history").insert(db_record).execute()
                 # Reset the inputs
-                st.session_state.patient_name=""
-                for name in info["names"]:
-                    st.session_state[f"marker_{name}"] = 0.0
+                st.session_state.reset_form = True
                 st.rerun()
             except Exception as e:
                 st.error(f"Save error: {e}")
