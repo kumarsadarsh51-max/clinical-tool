@@ -222,13 +222,14 @@ with st.sidebar:
             if not filtered_history:
                 st.warning("No records match these filters.")
             else:
-                for entry in filtered_history:
-                # SAFE DATA HANDLING: Ensure we have a string, not binary
-                raw = entry.get('raw_data', '')
-                if isinstance(raw, (bytes, bytearray)):
-                    raw = raw.decode('utf-8')
-                    
-                title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
+                    for entry in filtered_history:
+                        # SAFE DATA HANDLING: Ensure we have a string, not binary
+                        # THIS LINE BELOW MUST BE INDENTED FURTHER THAN THE 'for' LINE
+                        raw = entry.get('raw_data', '') 
+                        if isinstance(raw, (bytes, bytearray)):
+                            raw = raw.decode('utf-8')
+                        
+                        title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
                 
                 with st.expander(title):
                     st.write(f"**Date:** {entry.get('timestamp')}")
