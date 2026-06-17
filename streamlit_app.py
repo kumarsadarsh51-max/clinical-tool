@@ -1,3 +1,5 @@
+from supabase import create_client
+import streamlit as st
 import streamlit as st
 import numpy as np
 import datetime
@@ -7,7 +9,9 @@ import datetime
 from zoneinfo import ZoneInfo
 import random 
 import string 
-
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
+supabase = create_client(url, key)
 # --- Logic Functions ---
 def raw_to_norm(x, cutoff=1.0):
     if x <= 0: return 0.0
@@ -121,31 +125,41 @@ Please consult an oncologist for verification.
             st.text(report_content)
        
         else:
-            st.session_state.patient_history.append(record)
+            db_record = {
+        "id": unique_id,
+        "timestamp": formatted_time,
+        "patient_name": patient_name,
+        "cancer_type": cancer,
+        "risk_score": f"{y_final:.2%}",
+        "raw_data": str(dict(zip(info["names"], X_raw))) 
+    }
 
-            # --- UPDATED SAVING MESSAGE LOGIC ---
-            # 1. Create an empty container
-            msg_placeholder = st.empty()
-
-            # 3. Use a toast for the quick feedback
-            st.toast("Report saved!", icon="✅")
-            st.success("✅ Report generated and saved to history!")
-
-
+    # 2. Insert into Supabase
+    try:
+        supabase.table("patient_history").insert(db_record).execute()
+        st.toast("Report saved to database!", icon="✅")
+        st.success("✅ Report generated and saved to history!")
+    except Exception as e:
+        st.error(f"Database error: {e}")
+        
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
-    if not st.session_state.patient_history:
+    
+    # Fetch data directly from Supabase
+    response = supabase.table("patient_history").select("*").order("timestamp", desc=True).execute()
+    history = response.data
+    
+    if not history:
         st.info("No records logged.")
     else:
-        df = pd.DataFrame(st.session_state.patient_history)
-        # Loop through each record in history
-        for idx, entry in enumerate(st.session_state.patient_history):
-            # Create an expander for each patient (1-indexed)
-            with st.expander(f"Patient: {entry['Patient']} ({entry['ID']})"):
-                st.write(f"**Date:** {entry['Timestamp']}")
-                st.write(f"**Risk Score:** {entry['RiskScore']}")
-
+        for entry in history:
+            # Using the column names from your database
+            with st.expander(f"Patient: {entry['patient_name']} ({entry['id']})"):
+                st.write(f"**Date:** {entry['timestamp']}")
+                st.write(f"**Risk Score:** {entry['risk_score']}")
+                st.write(f"**Cancer Type:** {entry['cancer_type']}")
+                st.json(entry['raw_data']) # Displays the dictionary clearly
                 # Reconstruct the report content for this specific record
                 report_text = f"Report for {entry['Patient']}\nID: {entry['ID']}\nScore: {entry['RiskScore']}\nMarkers: {entry}"
 
