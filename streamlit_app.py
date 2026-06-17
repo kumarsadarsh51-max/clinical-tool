@@ -138,5 +138,6 @@ with st.sidebar:
                 
                     # Ensure this is inside the expander
                     report_text = f"Report for {entry.get('patient_name')}\nID: {entry_id}"
-                    st.download_button(label=f"📥 Download {entry_id}", data=report_text, file_name=f"report_{entry_id}.txt")    except Exception as e:
+                    st.download_button(label=f"📥 Download {entry_id}", data=report_text, file_name=f"report_{entry_id}.txt")    
+    except Exception as e:
                     st.error(f"DB Load Error: {e}")
