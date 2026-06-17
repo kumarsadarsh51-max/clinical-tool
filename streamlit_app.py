@@ -103,37 +103,29 @@ Risk level calculated based on clinical markers.
 Please consult an oncologist for verification.
 ==================================================
 """
-            # Save to DB
-            db_record = {"timestamp": formatted_time, "patient_name": patient_name, "cancer_type": cancer, "risk_score": f"{y_final:.2%}", "raw_data": current_data["raw_data"]}
-            supabase.table("patient_history").insert(db_record).execute()
-            
-            # This triggers a rerun, clearing the input boxes
-            st.rerun()
-
-# --- Display the persistent bill ---
-if st.session_state.report_content:
-    st.subheader("Diagnostic Report Preview")
-    st.text(st.session_state.report_content)
-    if st.button("Clear Preview"):
-        st.session_state.report_content = None
-        st.rerun()
-
-            # Save to DB
+            # 3. Save to Database
             db_record = {
                 "timestamp": formatted_time, 
                 "patient_name": patient_name, 
                 "cancer_type": cancer, 
-                "risk_score": f"{y_final:.2%}", # This will now reflect the calculated value
+                "risk_score": f"{y_final:.2%}", 
                 "raw_data": current_data["raw_data"]
             }
             
             try:
                 supabase.table("patient_history").insert(db_record).execute()
-                st.success("✅ Report saved!")
-                time.sleep(1)
+                # 4. Trigger rerun to clear form inputs
                 st.rerun()
             except Exception as e:
                 st.error(f"Save error: {e}")
+
+# --- Display the persistent bill (Place this AFTER the Generate button block) ---
+if "report_content" in st.session_state and st.session_state.report_content:
+    st.subheader("Diagnostic Report Preview")
+    st.text(st.session_state.report_content)
+    if st.button("Clear Preview"):
+        st.session_state.report_content = None
+        st.rerun()
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
