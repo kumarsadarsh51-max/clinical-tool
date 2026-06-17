@@ -32,6 +32,10 @@ cancer = st.selectbox("Select Cancer Type", list(CANCER_CONFIG.keys()))
 info = CANCER_CONFIG[cancer]
 X_raw = [st.number_input(f"{name} value:", value=0.0, format="%.2f") for name in info["names"]]
 
+# Initialize session state for the report
+if "report_content" not in st.session_state:
+    st.session_state.report_content = None
+    
 if st.button("Generate Diagnostic Report"):
     if not patient_name or cancer == "--select--":
         st.error("Please fill in all fields.")
@@ -80,7 +84,8 @@ if st.button("Generate Diagnostic Report"):
             formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
 
             # --- Hospital Bill Format ---
-            report_content = f"""
+            # Store report in session state
+            st.session_state.report_content = f"""
 ==================================================
            HOSPITAL CLINICAL LABORATORY           
 ==================================================
@@ -89,11 +94,7 @@ Date/Time    : {formatted_time}
 Test Type    : {cancer.upper()} RISK ASSESSMENT
 --------------------------------------------------
 Clinical Markers:
-"""
-            for i, name in enumerate(info["names"]):
-                report_content += f"- {name}: {X_raw[i]}\n"
-
-            report_content += f"""
+{chr(10).join([f'- {name}: {val}' for name, val in zip(info["names"], X_raw)])}
 --------------------------------------------------
 FINAL RISK SCORE: {y_final:.2%}
 --------------------------------------------------
@@ -102,9 +103,20 @@ Risk level calculated based on clinical markers.
 Please consult an oncologist for verification.
 ==================================================
 """
-            # Display on Screen
-            st.subheader("Diagnostic Report Preview")
-            st.text(report_content)
+            # Save to DB
+            db_record = {"timestamp": formatted_time, "patient_name": patient_name, "cancer_type": cancer, "risk_score": f"{y_final:.2%}", "raw_data": current_data["raw_data"]}
+            supabase.table("patient_history").insert(db_record).execute()
+            
+            # This triggers a rerun, clearing the input boxes
+            st.rerun()
+
+# --- Display the persistent bill ---
+if st.session_state.report_content:
+    st.subheader("Diagnostic Report Preview")
+    st.text(st.session_state.report_content)
+    if st.button("Clear Preview"):
+        st.session_state.report_content = None
+        st.rerun()
 
             # Save to DB
             db_record = {
