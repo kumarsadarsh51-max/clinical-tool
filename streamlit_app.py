@@ -155,6 +155,7 @@ if "report_content" in st.session_state and st.session_state.report_content:
         st.session_state.report_content = None
         st.rerun()
 # --- Sidebar History Log ---
+# --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
     try:
@@ -164,7 +165,8 @@ with st.sidebar:
             st.info("No records found.")
         else:
             for entry in history:
-                # Update this line to include more context:
+                # Use entry ID for the key to ensure buttons don't conflict
+                entry_id = entry.get('id', 'unknown')
                 title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
                 
                 with st.expander(title):
@@ -172,9 +174,21 @@ with st.sidebar:
                     st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
                     st.write(f"**Raw Data:** {entry.get('raw_data')}")
+                    
+                    # 1. Construct the CSV string
+                    # We wrap raw_data in quotes so commas inside the dictionary don't break the CSV
+                    csv_content = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{entry.get('raw_data')}\""
+                    
+                    # 2. Add the Download Button
+                    st.download_button(
+                        label="📥 Download as CSV",
+                        data=csv_content,
+                        file_name=f"report_{entry.get('patient_name')}_{entry.get('timestamp').replace('/', '-').replace(':', '-')}.csv",
+                        mime="text/csv",
+                        key=f"download_{entry_id}"
+                    )
     except Exception as e:
-        st.error(f"DB Load Error: {e}")
-# --- Clear History Button ---
+        st.error(f"DB Load Error: {e}")# --- Clear History Button ---
     if st.button("🗑️ Clear All History"):
         try:
             # Delete all rows in the table
