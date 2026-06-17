@@ -106,7 +106,6 @@ Please consult an oncologist for verification.
 try:
     response = supabase.table("patient_history").insert(db_record).execute()
     st.success("✅ Saved!")
-    st.session_state.refresh_count += 1
     # The sleep ensures the DB has time to write before the refresh
     import time
     time.sleep(2) 
@@ -114,8 +113,6 @@ except Exception as e:
     st.error(f"Error: {e}")
     
 # --- Sidebar History Log ---
-if 'refresh_count' not in st.session_state:
-    st.session_state.refresh_count = 0
 with st.sidebar:
     st.title("📜 Patient History Log")
     st.container(key=f"sidebar_content_{st.session_state.refresh_count}")
