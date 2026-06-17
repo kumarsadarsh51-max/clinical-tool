@@ -33,42 +33,6 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-def clear_report():
-    st.session_state.report_content = None
-
-# CONVERT TO PDF
-from fpdf import FPDF
-
-def generate_pdf(entry):
-    pdf = FPDF()
-    pdf.add_page()
-    
-    # Header
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="HOSPITAL CLINICAL LABORATORY", ln=True, align='C')
-    pdf.set_font("Arial", size=12)
-    pdf.ln(10)
-    
-    # Patient Details
-    pdf.cell(200, 10, txt=f"Patient Name: {entry['patient_name']}", ln=True)
-    pdf.cell(200, 10, txt=f"Patient ID: {entry.get('patient_id', 'N/A')}", ln=True)
-    pdf.cell(200, 10, txt=f"Date: {entry['timestamp']}", ln=True)
-    pdf.ln(5)
-    
-    # Risk Assessment
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(200, 10, txt=f"Test Type: {entry['cancer_type'].upper()} RISK ASSESSMENT", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=f"Final Risk Score: {entry['risk_score']}", ln=True)
-    pdf.ln(10)
-    
-    # Raw Data
-    pdf.cell(200, 10, txt="Clinical Markers:", ln=True)
-    pdf.set_font("Courier", size=10)
-    pdf.multi_cell(0, 10, txt=str(entry['raw_data']))
-    
-    return pdf.output(dest='S') # Returns the PDF as a string/bytes
-
 # --- Logic Functions ---
 def raw_to_norm(x, cutoff=1.0):
     if x <= 0: return 0.0
@@ -79,10 +43,11 @@ def raw_to_norm(x, cutoff=1.0):
 # SETTING UI OF WEBSITE
 st.set_page_config(page_title="Clinical Risk Assessment", layout="centered")
 st.title("🏥 Clinical Risk Assessment Tool")
+
 patient_name = st.text_input("Patient Full Name",key="patient_name")
 cancer = st.selectbox("Select Cancer Type", list(CANCER_CONFIG.keys()))
 info = CANCER_CONFIG[cancer]
-X_raw = [st.number_input(f"{name} value:", value=0.0, format="%.2f", key=f"marker_{name}", on_change=clear_report) for name in info["names"]]
+X_raw = [st.number_input(f"{name} value:", value=0.0, format="%.2f", key=f"marker_{name}") for name in info["names"]]
 
 # Initialize session state for the report
 if "report_content" not in st.session_state:
@@ -136,16 +101,7 @@ if st.button("Generate Diagnostic Report"):
             formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
 
             # --- Hospital Bill Format ---
-            marker_lines = []
-            for i, name in enumerate(info["names"]):
-                val = X_raw[i]
-                cutoff = info["cutoffs"][i]
-                # Flag if value exceeds cutoff
-                if val > cutoff:
-                    marker_lines.append(f"- {name}: {val} (HIGH - ALERT)")
-                else:
-                    marker_lines.append(f"- {name}: {val}")
-
+            # Store report in session state
             st.session_state.report_content = f"""
 ==================================================
            HOSPITAL CLINICAL LABORATORY           
@@ -155,16 +111,16 @@ Date/Time    : {formatted_time}
 Test Type    : {cancer.upper()} RISK ASSESSMENT
 --------------------------------------------------
 Clinical Markers:
-{chr(10).join(marker_lines)}
+{chr(10).join([f'- {name}: {val}' for name, val in zip(info["names"], X_raw)])}
 --------------------------------------------------
 FINAL RISK SCORE: {y_final:.2%}
 --------------------------------------------------
 Result Interpretation: 
 Risk level calculated based on clinical markers.
-{f"⚠️ ALERT: One or more markers are above the clinical threshold." if any(X_raw[i] > info["cutoffs"][i] for i in range(len(X_raw))) else "All markers are within normal range."}
 Please consult an oncologist for verification.
 ==================================================
-"""            # 3. Save to Database
+"""
+            # 3. Save to Database
             db_record = {
                 "timestamp": formatted_time, 
                 "patient_name": patient_name, 
@@ -181,75 +137,39 @@ Please consult an oncologist for verification.
             except Exception as e:
                 st.error(f"Save error: {e}")
 
+# --- Display the persistent bill (Place this AFTER the Generate button block) ---
 if "report_content" in st.session_state and st.session_state.report_content:
     st.subheader("Diagnostic Report Preview")
     st.text(st.session_state.report_content)
     if st.button("Clear Preview"):
         st.session_state.report_content = None
         st.rerun()
-
-# --- Sidebar History Log ---
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
-    
-    # --- 1. SEARCH & FILTER CONTROLS ---
-    search_query = st.text_input("🔍 Search by Patient Name").lower()
-    st.write("Filter by Date Range:")
-    col1, col2 = st.columns(2)
-    with col1:
-        start_date = st.date_input("Start", value=datetime.date(2026, 1, 1))
-    with col2:
-        end_date = st.date_input("End", value=datetime.date.today())
-
     try:
         response = supabase.table("patient_history").select("*").execute()
         history = response.data
-        
         if not history:
             st.info("No records found.")
         else:
-            filtered_history = []
             for entry in history:
-                name_match = search_query in entry.get('patient_name', '').lower()
-                entry_date_str = entry.get('timestamp').split('/')[0]
-                entry_date = datetime.datetime.strptime(entry_date_str, '%d-%m-%Y').date()
-                date_match = start_date <= entry_date <= end_date
-                if name_match and date_match:
-                    filtered_history.append(entry)
-
-            if not filtered_history:
-                st.warning("No records match these filters.")
-            else:
-            for entry in filtered_history:
-                # SAFE DATA HANDLING
-                raw = entry.get('raw_data', '')
-                if isinstance(raw, (bytes, bytearray)):
-                    raw = raw.decode('utf-8')
-                
+                # Update this line to include more context:
                 title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
                 
                 with st.expander(title):
                     st.write(f"**Date:** {entry.get('timestamp')}")
                     st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                    st.write(f"**Patient ID:** {entry.get('patient_id', 'N/A')}")
-                    
-                    # --- EXPORT OPTIONS ---
-                    col_pdf, col_csv = st.columns(2)
-                    with col_pdf:
-                        pdf_bytes = generate_pdf(entry)
-                        st.download_button("📥 PDF", pdf_bytes, f"report_{entry.get('patient_name')}.pdf", "application/pdf")
-                    
-                    with col_csv:
-                        # Keep this on one line or use a backslash \ to avoid syntax errors
-                        csv_data = f"Patient,Date\n{entry.get('patient_name')},{entry.get('timestamp')}"
-                        st.download_button("📥 CSV", csv_data, f"report_{entry.get('patient_name')}.csv", "text/csv")
-    # --- Clear History Button ---
+                    st.write(f"**Raw Data:** {entry.get('raw_data')}")
+    except Exception as e:
+        st.error(f"DB Load Error: {e}")
+# --- Clear History Button ---
     if st.button("🗑️ Clear All History"):
         try:
+            # Delete all rows in the table
             supabase.table("patient_history").delete().neq("id", 0).execute()
             st.success("History cleared!")
-            st.rerun()
+            st.rerun() # Refresh to update the UI
         except Exception as e:
             st.error(f"Error clearing history: {e}")
