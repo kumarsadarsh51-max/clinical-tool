@@ -99,22 +99,20 @@ Please consult an oncologist for verification.
         "patient_name": patient_name,
         "cancer_type": cancer,
         "risk_score": f"{y_final:.2%}",
-        "raw_data": dict(zip(info["names"], X_raw))
+        "raw_data": str(dict(zip(info["names"], X_raw)))
     }
 
     # Update your insert block to this:
 try:
     response = supabase.table("patient_history").insert(db_record).execute()
-    print("DEBUG: Supabase Response:", response) # Check this in the LOGS
-    if response:
-        st.success("✅ Report saved to database ")
-        import time
-        time.sleep(2)
-        st.rerun()
-    else:
-        st.error("Database did not return a success response.")
+    st.success("✅ Saved!")
+    # The sleep ensures the DB has time to write before the refresh
+    import time
+    time.sleep(2) 
+    st.rerun() 
 except Exception as e:
     st.error(f"Error: {e}")
+    
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
@@ -129,9 +127,9 @@ with st.sidebar:
             for entry in history:
                 entry_id = entry.get('id', 'N/A')
                 with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')} ({entry_id})"):
-                    st.write(f"**Date:** {entry.get('timestamp')}")
-                    st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                    st.json(entry.get('raw_data', {}))
+        st.write(f"**Date:** {entry.get('timestamp')}")
+        st.write(f"**Risk Score:** {entry.get('risk_score')}")
+        st.write(f"**Raw Data:** {entry.get('raw_data')}") # Display as text string
                     
                     # Button inside the loop
                     report_text = f"Report for {entry.get('patient_name')}\nID: {entry_id}"
