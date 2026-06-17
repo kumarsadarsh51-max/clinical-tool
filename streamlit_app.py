@@ -26,9 +26,6 @@ CANCER_CONFIG = {
     "prostate": {"names": ["PSA", "Free-PSA", "PSA-Density", "DRE", "Gleason"], "cutoffs": [4.0, 0.25, 0.10, 1.5, 6.0]}
 }
 
-# --- Session State Initialization ---
-if 'patient_history' not in st.session_state:
-    st.session_state.patient_history = []
 
 st.set_page_config(page_title="Clinical Risk Assessment", layout="centered")
 
@@ -94,91 +91,66 @@ Please consult an oncologist for verification.
         # Display on Screen (Kept exactly as requested)
         st.subheader("Diagnostic Report Preview")
         st.text(report_content)
-        # Generate a random ID like 'P-4X9B2'
-        random_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-        unique_id = f"P-{random_suffix}"
-
-        # Add to History (Internal logic)
-        record = {
-            "ID": unique_id, 
-            "Timestamp": formatted_time,
-            "Patient": patient_name,
-            "CancerType": cancer,
-            "RiskScore": f"{y_final:.2%}",
-            **dict(zip(info["names"], X_raw))
-        }
-        is_duplicate = False
-        for entry in st.session_state.patient_history:
-            if (entry['Patient'] == record['Patient'] and 
-                entry['CancerType'] == record['CancerType'] and
-                all(entry.get(k) == record.get(k) for k in info["names"])):
-                is_duplicate = True
-                duplicate_time = entry['Timestamp']
-                break
-
-        if is_duplicate:
-            st.toast("Couldnt save record. Duplicate Found!", icon="⚠️")
-            st.warning(f"⚠️ Duplicate entry detected! This assessment was already recorded at {duplicate_time}.")
-        # ... inside your 'else' block for the duplicate check ...
-            st.subheader("Reference: Previous Clinical Output") # Clear distinction
-            st.info("The output below corresponds to the previously saved record.")
-            st.text(report_content)
        
-        else:
-            db_record = {
-        "id": unique_id,
+       
+   # Generate ID and save directly
+    db_record = {
         "timestamp": formatted_time,
         "patient_name": patient_name,
         "cancer_type": cancer,
         "risk_score": f"{y_final:.2%}",
-        "raw_data": str(dict(zip(info["names"], X_raw))) 
+        "raw_data": dict(zip(info["names"], X_raw))
     }
 
-    # 2. Insert into Supabase
-    try:
-        supabase.table("patient_history").insert(db_record).execute()
-        st.toast("Report saved to database!", icon="✅")
-        st.success("✅ Report generated and saved to history!")
-    except Exception as e:
-        st.error(f"Database error: {e}")
-        
+    # Update your insert block to this:
+try:
+    response = supabase.table("patient_history").insert(db_record).execute()
+    print("DEBUG: Supabase Response:", response) # Check this in the LOGS
+    if response:
+        st.success("✅ Report saved to database ")
+        import time
+        time.sleep(2)
+        st.rerun()
+    else:
+        st.error("Database did not return a success response.")
+except Exception as e:
+    st.error(f"Error: {e}")
 # --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
     
-    # Fetch data directly from Supabase
-    response = supabase.table("patient_history").select("*").order("timestamp", desc=True).execute()
-    history = response.data
-    
-    if not history:
-        st.info("No records logged.")
-    else:
-        for entry in history:
-            # Using the column names from your database
-            with st.expander(f"Patient: {entry['patient_name']} ({entry['id']})"):
-                st.write(f"**Date:** {entry['timestamp']}")
-                st.write(f"**Risk Score:** {entry['risk_score']}")
-                st.write(f"**Cancer Type:** {entry['cancer_type']}")
-                st.json(entry['raw_data']) # Displays the dictionary clearly
-                # Reconstruct the report content for this specific record
-                report_text = f"Report for {entry['Patient']}\nID: {entry['ID']}\nScore: {entry['RiskScore']}\nMarkers: {entry}"
+    try:
+        response = supabase.table("patient_history").select("*").order("id", desc=True).execute()
+        history = response.data
+        
+        if not history:
+            st.info("No records in database.")
+        else:
+            # 1. Create the DataFrame for CSV export here
+            df = pd.DataFrame(history)
+            
+            # 2. Iterate and display
+            for entry in history:
+                patient_name = entry.get('patient_name', 'Unknown')
+                entry_id = entry.get('id', 'N/A')
+                
+                with st.expander(f"Patient: {patient_name} ({entry_id})"):
+                    st.write(f"**Date:** {entry.get('timestamp')}")
+                    st.write(f"**Risk Score:** {entry.get('risk_score')}")
+                    st.json(entry.get('raw_data', {}))
+                    
+                    # 3. Create download button inside the loop
+                    report_text = f"Report for {patient_name}\nID: {entry_id}\nScore: {entry.get('risk_score')}"
+                    st.download_button(
+                        label=f"📥 Download {entry_id}", 
+                        data=report_text, 
+                        file_name=f"report_{entry_id}.txt"
+                    )
 
-                # Individual Download Button for this specific record
-                st.download_button(
-                    label=f"📥 Download {entry['ID']}",
-                    data=report_text,
-                    file_name=f"{entry['Patient']}_{entry['ID']}.txt",
-                    mime="text/plain"
-                )
-
-
-        # CSV Export
-        col1, col2 = st.columns(2)
-        csv_buffer = io.StringIO()
-        df.to_csv(csv_buffer, index=False)
-        col1.download_button("📥 CSV", csv_buffer.getvalue(), "history.csv", "text/csv")
-
-        # Clear History
-        if col2.button("🗑️ Clear"):
-            st.session_state.patient_history = []
-            st.rerun()
+            # 4. CSV Export
+            csv_buffer = io.StringIO()
+            df.to_csv(csv_buffer, index=False)
+            st.download_button("📥 Download Full History (CSV)", csv_buffer.getvalue(), "history.csv", "text/csv")
+            
+    except Exception as e:
+        st.error(f"DB Load Error: {e}")
