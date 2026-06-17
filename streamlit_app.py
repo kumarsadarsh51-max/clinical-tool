@@ -1,17 +1,14 @@
-from supabase import create_client
-import streamlit as st
 import streamlit as st
 import numpy as np
 import datetime
-import pandas as pd
-import io
-import datetime
 from zoneinfo import ZoneInfo
-import random 
-import string 
+from supabase import create_client
+
+# --- Initialize Supabase ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
+
 # --- Logic Functions ---
 def raw_to_norm(x, cutoff=1.0):
     if x <= 0: return 0.0
@@ -20,52 +17,48 @@ def raw_to_norm(x, cutoff=1.0):
     else: return 0.8 + 0.2 * (x - cutoff) / (4 * cutoff)
 
 CANCER_CONFIG = {
-    "--select--":{"names":[]},
+    "--select--": {"names": []},
     "lung": {"names": ["CEA", "CA125", "NSE", "CYFRA21-1", "Pro-GRP"], "cutoffs": [5.0, 35.0, 16.0, 3.5, 65.0]},
     "breast": {"names": ["CA15-3", "CA125", "CEA", "HER2", "ER"], "cutoffs": [30.0, 35.0, 5.0, 2.5, 2.5]},
     "prostate": {"names": ["PSA", "Free-PSA", "PSA-Density", "DRE", "Gleason"], "cutoffs": [4.0, 0.25, 0.10, 1.5, 6.0]}
 }
 
-
 st.set_page_config(page_title="Clinical Risk Assessment", layout="centered")
-
-# --- Main Assessment UI ---
 st.title("🏥 Clinical Risk Assessment Tool")
 
-# Use 'key' to force clear the inputs after save
+# --- Form Inputs ---
 patient_name = st.text_input("Patient Full Name", key="p_name")
 cancer = st.selectbox("Select Cancer Type", ["--select--", "lung", "breast", "prostate"], key="c_type")
 
 info = CANCER_CONFIG[cancer] if cancer != "--select--" else {"names": []}
 X_raw = [st.number_input(f"{name} value:", value=0.0, format="%.2f", key=f"val_{name}") for name in info["names"]]
 
+# --- Calculation and Save ---
 if st.button("Generate Diagnostic Report"):
     if not patient_name or cancer == "--select--":
         st.error("Please fill in all fields.")
     else:
-        # Calculation Logic
+        # 1. Run Calculations
         X_norm = np.array([raw_to_norm(X_raw[i], info["cutoffs"][i]) for i in range(len(info["cutoffs"]))])
         mu_low = np.clip(1.0 - X_norm / 0.5, 0.0, 1.0)
         mu_high = np.clip(X_norm / 1.2, 0.0, 1.0)
-        # 2. Define the local time ONCE here
-        local_now = datetime.datetime.now(ZoneInfo("Asia/Kolkata"))
-        formatted_time = local_now.strftime('%d-%m-%Y/%H:%M')
-
+        
+        # Rules logic
         rules = [
             {"ant_low": [True]*5, "offset": 0.05, "w": np.array([0.05]*5)},
             {"ant_low": [False, False, True, True, True], "offset": 0.2, "w": np.array([0.3, 0.2, 0.0, 0.0, 0.0])},
             {"ant_low": [False, True, False, True, True], "offset": 0.3, "w": np.array([0.3, 0.0, 0.25, 0.0, 0.0])},
             {"ant_low": [False]*5, "offset": 0.4, "w": np.array([0.15]*5)},
-            {"ant_low": [True, True, True, True, True], "offset": 0.05, "w": np.array([0.01]*5)}]
-
+            {"ant_low": [True, True, True, True, True], "offset": 0.05, "w": np.array([0.01]*5)}
+        ]
         alpha, y_consequent = [], []
         for r in rules:
             mu_ri = [mu_low[i] if r["ant_low"][i] else mu_high[i] for i in range(5)]
             alpha.append(np.prod(mu_ri))
             y_consequent.append(r["offset"] + np.sum(r["w"] * X_norm))
-        # Change your existing y_final calculation line to this:
+        
         y_final = np.clip(np.sum(np.array(alpha) * np.array(y_consequent)) / (np.sum(alpha) + 1e-9), 0.05, 1.0)
-
+        
         # Create Hospital Style Report
         report_content = f"""
 ==================================================
@@ -95,7 +88,9 @@ Please consult an oncologist for verification.
        
        
    # Generate ID and save directly
-    db_record = {
+    # 2. Prepare Data
+        formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
+        db_record = {
             "timestamp": formatted_time,
             "patient_name": patient_name,
             "cancer_type": cancer,
@@ -103,57 +98,29 @@ Please consult an oncologist for verification.
             "raw_data": str(dict(zip(info["names"], X_raw)))
         }
 
+        # 3. Save to DB
         try:
-        supabase.schema('public').table("patient_history").insert(db_record).execute()
-        st.success("✅ Saved!")
-        
-        # Clear the inputs
-        st.session_state.p_name = ""
-        st.session_state.c_type = "--select--"
-        
-        # SET THE FLAG INSTEAD OF RERUNNING
-        st.session_state.data_saved = True
-        
-        # REMOVE OR COMMENT OUT: st.rerun()
-    except Exception as e:
-        st.error(f"Error: {e}")
-        
-# This ensures the sidebar refreshes only when data_saved is True
-if st.session_state.get("data_saved", False):
-    st.session_state.data_saved = False # Reset flag
+            supabase.schema('public').table("patient_history").insert(db_record).execute()
+            st.success(f"✅ Report saved! Risk Score: {y_final:.2%}")
+            
+            # Wipe form
+            st.session_state.p_name = ""
+            st.session_state.c_type = "--select--"
+            st.rerun() 
+        except Exception as e:
+            st.error(f"Save error: {e}")
 
 # --- Sidebar History Log ---
-# 1. Add this function above your sidebar code
-@st.cache_data(ttl=10) # Refreshes every 10 seconds
-def get_patient_history():
-    try:
-        response = supabase.schema('public').table("patient_history").select("*").order("id", desc=True).execute()
-        return response.data
-    except Exception as e:
-        return []
-
-# 2. Use this in your sidebar
 with st.sidebar:
     st.title("📜 Patient History Log")
-    
-    # Fetch data fresh every time
     try:
         response = supabase.schema('public').table("patient_history").select("*").order("id", desc=True).execute()
-        history = response.data
-        
-        if history:
-            for entry in history:
-                patient_name = entry.get('patient_name', 'Unknown')
-                entry_id = entry.get('id', 'N/A')
-                with st.expander(f"Patient: {patient_name}"):
+        if response.data:
+            for entry in response.data:
+                with st.expander(f"Patient: {entry.get('patient_name')}"):
                     st.write(f"**Date:** {entry.get('timestamp')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                    st.download_button(
-                        label=f"📥 Download ID: {entry_id}", 
-                        data=str(entry), 
-                        file_name=f"report_{entry_id}.txt"
-                    )
         else:
-            st.info("No records in database.")
+            st.info("No records.")
     except Exception as e:
-        st.error(f"Error loading history: {e}")
+        st.error("Could not load history.")
