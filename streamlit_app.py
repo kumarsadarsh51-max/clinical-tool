@@ -96,7 +96,7 @@ Please consult an oncologist for verification.
         st.text(report_content)
         # Generate a random ID like 'P-4X9B2'
         random_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-        unique_id = f"P-{random_suffix}"
+        unique_id = f"P-{random_suffix}-{int(datetime.datetime.now().timestamp())}"
 
         # Add to History (Internal logic)
         record = {
