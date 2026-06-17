@@ -104,8 +104,6 @@ if st.button("Generate Diagnostic Report"):
             formatted_time = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%d-%m-%Y/%H:%M')
 
             # --- Hospital Bill Format ---
-            # Store report in session state
-            # Helper to format markers with warnings
             marker_lines = []
             for i, name in enumerate(info["names"]):
                 val = X_raw[i]
@@ -115,6 +113,7 @@ if st.button("Generate Diagnostic Report"):
                     marker_lines.append(f"- {name}: {val} (HIGH - ALERT)")
                 else:
                     marker_lines.append(f"- {name}: {val}")
+
             st.session_state.report_content = f"""
 ==================================================
            HOSPITAL CLINICAL LABORATORY           
@@ -124,16 +123,16 @@ Date/Time    : {formatted_time}
 Test Type    : {cancer.upper()} RISK ASSESSMENT
 --------------------------------------------------
 Clinical Markers:
-{chr(10).join([f'- {name}: {val}' for name, val in zip(info["names"], X_raw)])}
+{chr(10).join(marker_lines)}
 --------------------------------------------------
 FINAL RISK SCORE: {y_final:.2%}
 --------------------------------------------------
 Result Interpretation: 
 Risk level calculated based on clinical markers.
+{f"⚠️ ALERT: One or more markers are above the clinical threshold." if any(X_raw[i] > info["cutoffs"][i] for i in range(len(X_raw))) else "All markers are within normal range."}
 Please consult an oncologist for verification.
 ==================================================
-"""
-            # 3. Save to Database
+"""            # 3. Save to Database
             db_record = {
                 "timestamp": formatted_time, 
                 "patient_name": patient_name, 
