@@ -208,7 +208,7 @@ with st.sidebar:
 
                     with col2:
                         # PDF DOWNLOAD
-                        pdf_bytes = generate _pdf(entry)
+                        pdf_bytes = generate_pdf(entry)
                         st.download_button("📥 PDF", pdf_bytes, f"report_{entry.get('patient_name')}.pdf", "application/pdf", key=f"pdf_{entry_id}"
                     
                     # 2. Add the Download Button
