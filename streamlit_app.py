@@ -140,6 +140,9 @@ Please consult an oncologist for verification.
             except Exception as e:
                 st.error(f"Save error: {e}")
 
+if "report_content" in st.session_state and st.session_state.report_content:
+    st.subheader("Diagnostic Report Preview")
+    st.text(st.session_state.report_content)
 
 # --- Sidebar History Log ---
 with st.sidebar:
