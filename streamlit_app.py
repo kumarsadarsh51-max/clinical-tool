@@ -119,33 +119,29 @@ except Exception as e:
 with st.sidebar:
     st.title("📜 Patient History Log")
     try:
-        # Fetch data
         response = supabase.table("patient_history").select("*").order("id", desc=True).execute()
         
-        # Check if response.data exists and is not None
         if response.data:
             history = response.data
+            # Convert to DataFrame for CSV
+            df = pd.DataFrame(history)
+            
             for entry in history:
-                with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')}"):
+                entry_id = entry.get('id', 'N/A')
+                with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')} ({entry_id})"):
                     st.write(f"**Date:** {entry.get('timestamp')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
                     st.json(entry.get('raw_data', {}))
-        else:
-            st.info("No records in database.")
-    except Exception as e:
-        st.error(f"Database Error: {e}")                    
-                    # 3. Create download button inside the loop
-                    report_text = f"Report for {patient_name}\nID: {entry_id}\nScore: {entry.get('risk_score')}"
-                    st.download_button(
-                        label=f"📥 Download {entry_id}", 
-                        data=report_text, 
-                        file_name=f"report_{entry_id}.txt"
-                    )
+                    
+                    # Button inside the loop
+                    report_text = f"Report for {entry.get('patient_name')}\nID: {entry_id}"
+                    st.download_button(f"📥 Download {entry_id}", report_text, f"report_{entry_id}.txt")
 
-            # 4. CSV Export
+            # CSV Export
             csv_buffer = io.StringIO()
             df.to_csv(csv_buffer, index=False)
             st.download_button("📥 Download Full History (CSV)", csv_buffer.getvalue(), "history.csv", "text/csv")
-            
+        else:
+            st.info("No records in database.")
     except Exception as e:
-        st.error(f"DB Load Error: {e}")
+        st.error(f"Database Error: {e}")
