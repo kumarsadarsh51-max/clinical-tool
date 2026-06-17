@@ -104,20 +104,23 @@ Please consult an oncologist for verification.
 
     # Update your insert block to this:
 try:
-            # 1. Execute the insert and capture the response
+            # 1. Execute
             response = supabase.table("patient_history").insert(db_record).execute()
             
-            # 2. Check if the database actually returned a record
-            if response.data or response.status_code in [200, 201]:
-                st.success("✅ Report successfully committed to Supabase!")
-                import time
+            # 2. THE CRITICAL CHECK: 
+            # If Supabase returns data, the insert worked. 
+            # If it returns empty data, something is wrong.
+            st.write("DEBUG Response:", response.data) 
+            
+            if response.data is not None:
+                st.success("✅ Database confirmed save!")
                 time.sleep(1)
                 st.rerun()
             else:
-                st.error(f"Database rejected the save. Response: {response}")
+                st.error("Database error: No data returned from insert.")
                 
         except Exception as e:
-            st.error(f"Exception during save: {e}")
+            st.error(f"Full Exception: {e}")
     
 # --- Sidebar History Log ---
 with st.sidebar:
