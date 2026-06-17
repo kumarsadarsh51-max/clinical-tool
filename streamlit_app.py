@@ -99,6 +99,7 @@ Please consult an oncologist for verification.
         unique_id = f"P-{random_suffix}-{int(datetime.datetime.now().timestamp())}"
 
         # Generate ID and save directly
+   # Generate ID and save directly
     db_record = {
         "id": unique_id,
         "timestamp": formatted_time,
@@ -120,33 +121,7 @@ Please consult an oncologist for verification.
         
     except Exception as e:
         st.error(f"Database error: {e}")
-       
-        else:
-      db_record = {
-            "id": unique_id, 
-            "timestamp": formatted_time, 
-            "patient_name": patient_name, 
-            "cancer_type": cancer, 
-            "risk_score": f"{y_final:.2%}", 
-            "raw_data": str(dict(zip(info["names"], X_raw))) 
-        }
-
-        try:
-            # Execute the insert and wait for a response
-            response = supabase.table("patient_history").insert(db_record).execute()
-            
-            # Check if the response actually contains data
-            if response.data or response.status_code in [200, 201]:
-                st.success("✅ Report saved to database!")
-                # Add a deliberate delay to ensure the database processes the write
-                import time
-                time.sleep(2) 
-                st.rerun()
-            else:
-                st.error("Database error: Record was not saved.")
-        except Exception as e:
-            st.error(f"Database error: {str(e)}")
-            # --- Sidebar History Log ---
+# --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
     
