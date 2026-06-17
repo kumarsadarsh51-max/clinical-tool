@@ -104,21 +104,24 @@ Please consult an oncologist for verification.
         }
 
         try:
-            supabase.schema('public').table("patient_history").insert(db_record).execute()
-            st.success("✅ Saved!")
-            
-            # THE FIX: This clears the inputs manually
-            st.session_state.p_name = ""
-            st.session_state.c_type = "--select--"
-            
-            time.sleep(1)
-            st.rerun() # Now it reruns with empty inputs and fresh DB data
-        except Exception as e:
-            st.error(f"Error: {e}")
+        supabase.schema('public').table("patient_history").insert(db_record).execute()
+        st.success("✅ Saved!")
+        
+        # Clear the inputs
+        st.session_state.p_name = ""
+        st.session_state.c_type = "--select--"
+        
+        # SET THE FLAG INSTEAD OF RERUNNING
+        st.session_state.data_saved = True
+        
+        # REMOVE OR COMMENT OUT: st.rerun()
+    except Exception as e:
+        st.error(f"Error: {e}")
+        
 # This ensures the sidebar refreshes only when data_saved is True
 if st.session_state.get("data_saved", False):
     st.session_state.data_saved = False # Reset flag
-    st.rerun() # Refresh once, safely
+
 # --- Sidebar History Log ---
 # 1. Add this function above your sidebar code
 @st.cache_data(ttl=10) # Refreshes every 10 seconds
@@ -132,25 +135,25 @@ def get_patient_history():
 # 2. Use this in your sidebar
 with st.sidebar:
     st.title("📜 Patient History Log")
-    history = get_patient_history()
     
-    if history:
-        for entry in history:
-            # Safely get variables
-            patient_name = entry.get('patient_name', 'Unknown')
-            entry_id = entry.get('id', 'N/A')
-            
-            # The expander AND the button must be INSIDE the loop
-            with st.expander(f"Patient: {patient_name}"):
-                st.write(f"**Date:** {entry.get('timestamp')}")
-                st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                st.write(f"**Raw Data:** {entry.get('raw_data')}")
-                
-                # The button is now INSIDE the loop, where 'entry' is valid
-                st.download_button(
-                    label=f"📥 Download {entry_id}", 
-                    data=str(entry), 
-                    file_name=f"report_{entry_id}.txt"
-                )
-    else:
-        st.info("No records in database.")
+    # Fetch data fresh every time
+    try:
+        response = supabase.schema('public').table("patient_history").select("*").order("id", desc=True).execute()
+        history = response.data
+        
+        if history:
+            for entry in history:
+                patient_name = entry.get('patient_name', 'Unknown')
+                entry_id = entry.get('id', 'N/A')
+                with st.expander(f"Patient: {patient_name}"):
+                    st.write(f"**Date:** {entry.get('timestamp')}")
+                    st.write(f"**Risk Score:** {entry.get('risk_score')}")
+                    st.download_button(
+                        label=f"📥 Download ID: {entry_id}", 
+                        data=str(entry), 
+                        file_name=f"report_{entry_id}.txt"
+                    )
+        else:
+            st.info("No records in database.")
+    except Exception as e:
+        st.error(f"Error loading history: {e}")
