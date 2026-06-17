@@ -145,40 +145,41 @@ Please consult an oncologist for verification.
         st.write("DEBUG INFO:", db_record) # This will print the data being sent
         
 # --- Sidebar History Log ---
-# --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
     
-    response = supabase.table("patient_history").select("*").order("timestamp", desc=True).execute()
-    history = response.data
-    
-    if not history:
-        st.info("No records logged.")
-    else:
-        df = pd.DataFrame(history)
-        for entry in history:
-            # Use the correct lowercase keys
-            with st.expander(f"Patient: {entry['patient_name']} ({entry['id']})"):
-                st.write(f"**Date:** {entry['timestamp']}")
-                st.write(f"**Risk Score:** {entry['risk_score']}")
-                st.write(f"**Cancer Type:** {entry['cancer_type']}")
-                st.json(entry['raw_data'])
-                
-                report_text = f"Report for {entry['patient_name']}\nID: {entry['id']}\nScore: {entry['risk_score']}"
-                st.download_button(
-                    label=f"📥 Download {entry['id']}", 
-                    data=report_text, 
-                    file_name=f"{entry['patient_name']}_{entry['id']}.txt", 
-                    mime="text/plain"
-                )
-
-        # CSV Export
-        col1, col2 = st.columns(2)
-        csv_buffer = io.StringIO()
-        df.to_csv(csv_buffer, index=False)
-        col1.download_button("📥 CSV", csv_buffer.getvalue(), "history.csv", "text/csv")
+    # Use a try-except to catch connection issues
+    try:
+        response = supabase.table("patient_history").select("*").order("timestamp", desc=True).execute()
+        history = response.data
         
-        if col2.button("🗑️ Clear"):
-            # Note: This only clears session state, NOT the database!
-            st.session_state.patient_history = []
-            st.rerun()
+        if not history:
+            st.info("No records logged in database.")
+        else:
+            # We must convert to list explicitly to avoid iterator issues
+            history_list = list(history)
+            df = pd.DataFrame(history_list)
+            
+            for entry in history_list:
+                # Use standard dictionary access
+                with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')}"):
+                    st.write(f"**Date:** {entry.get('timestamp')}")
+                    st.write(f"**Risk Score:** {entry.get('risk_score')}")
+                    st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
+                    st.json(entry.get('raw_data'))
+                    
+                    report_text = f"Report for {entry.get('patient_name')}\nID: {entry.get('id')}\nScore: {entry.get('risk_score')}"
+                    st.download_button(
+                        label=f"📥 Download {entry.get('id')}", 
+                        data=report_text, 
+                        file_name=f"report_{entry.get('id')}.txt"
+                    )
+
+            # CSV Export
+            csv_buffer = io.StringIO()
+            df.to_csv(csv_buffer, index=False)
+            st.download_button("📥 Download Full History (CSV)", csv_buffer.getvalue(), "history.csv", "text/csv")
+            
+    except Exception as e:
+        st.error("Could not load history from database.")
+        st.write(e)
