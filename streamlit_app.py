@@ -136,21 +136,21 @@ with st.sidebar:
     
     if history:
         for entry in history:
+            # Safely get variables
+            patient_name = entry.get('patient_name', 'Unknown')
             entry_id = entry.get('id', 'N/A')
-            with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')}"):
+            
+            # The expander AND the button must be INSIDE the loop
+            with st.expander(f"Patient: {patient_name}"):
                 st.write(f"**Date:** {entry.get('timestamp')}")
                 st.write(f"**Risk Score:** {entry.get('risk_score')}")
                 st.write(f"**Raw Data:** {entry.get('raw_data')}")
+                
+                # The button is now INSIDE the loop, where 'entry' is valid
+                st.download_button(
+                    label=f"📥 Download {entry_id}", 
+                    data=str(entry), 
+                    file_name=f"report_{entry_id}.txt"
+                )
     else:
-        st.info("No records in database.")                    
-                    # Correctly scoped download button
-                    st.download_button(
-                        label=f"📥 Download {entry_id}", 
-                        data=str(entry), 
-                        file_name=f"report_{entry_id}.txt"
-                    )
-        else:
-            st.info("No records in database.")
-            
-    except Exception as e:
-        st.error(f"Sidebar Error: {e}")
+        st.info("No records in database.")
