@@ -58,8 +58,16 @@ if st.button("Generate Diagnostic Report"):
             y_consequent.append(r["offset"] + np.sum(r["w"] * X_norm))
         
         y_final = np.clip(np.sum(np.array(alpha) * np.array(y_consequent)) / (np.sum(alpha) + 1e-9), 0.05, 1.0)
-now = datetime.datetime.now()
-formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
+if st.button("Generate Diagnostic Report"):
+    if not patient_name or cancer == "--select--":
+        st.error("Please fill in all fields.")
+    else:
+        # 1. Run Calculations
+        # ... (keep your existing calculation logic here) ...
+        
+        # Define formatted_time inside the button click block
+        now = datetime.datetime.now()
+        formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
         
         # Create Hospital Style Report
         report_content = f"""
