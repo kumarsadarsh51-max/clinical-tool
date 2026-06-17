@@ -26,9 +26,6 @@ CANCER_CONFIG = {
     "prostate": {"names": ["PSA", "Free-PSA", "PSA-Density", "DRE", "Gleason"], "cutoffs": [4.0, 0.25, 0.10, 1.5, 6.0]}
 }
 
-# --- Session State Initialization ---
-if 'patient_history' not in st.session_state:
-    st.session_state.patient_history = []
 
 st.set_page_config(page_title="Clinical Risk Assessment", layout="centered")
 
@@ -114,31 +111,28 @@ try:
 except Exception as e:
     st.error(f"Error: {e}")
 # --- Sidebar History Log ---
+# --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
     
-    # Use a try-except to catch connection issues
+    # Force a fresh fetch from Supabase on every render
     try:
-        response = supabase.table("patient_history").select("*").order("timestamp", desc=True).execute()
+        response = supabase.table("patient_history").select("*").order("id", desc=True).execute()
         history = response.data
         
         if not history:
-            st.info("No records logged in database.")
+            st.info("No records in database.")
         else:
-            # We must convert to list explicitly to avoid iterator issues
-            history_list = list(history)
-            df = pd.DataFrame(history_list)
-            
-            for entry in history_list:
-                # Use standard dictionary access
+            for entry in history:
                 with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')}"):
                     st.write(f"**Date:** {entry.get('timestamp')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                    st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
-                    st.json(entry.get('raw_data'))
+                    st.json(entry.get('raw_data', {}))
+    except Exception as e:
+        st.error(f"DB Load Error: {e}")
                     
-                    report_text = f"Report for {entry.get('patient_name')}\nID: {entry.get('id')}\nScore: {entry.get('risk_score')}"
-                    st.download_button(
+    report_text = f"Report for {entry.get('patient_name')}\nID: {entry.get('id')}\nScore: {entry.get('risk_score')}"
+    st.download_button(
                         label=f"📥 Download {entry.get('id')}", 
                         data=report_text, 
                         file_name=f"report_{entry.get('id')}.txt"
