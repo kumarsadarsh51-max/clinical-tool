@@ -158,7 +158,6 @@ if "report_content" in st.session_state and st.session_state.report_content:
 with st.sidebar:
     st.title("📜 Patient History Log")
     try:
-        # Fetch history from Supabase
         response = supabase.table("patient_history").select("*").execute()
         history = response.data
         
@@ -166,25 +165,29 @@ with st.sidebar:
             st.info("No records found.")
         else:
             for entry in history:
-                # SAFE STRING CONVERSION: Force entry to string to avoid binary errors
+                # Convert data to string to avoid binary errors
                 raw_data = str(entry.get('raw_data', ''))
-                
-                entry_id = entry.get('id', 'unknown')
-                title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
+                title = f"{entry.get('patient_name')} ({entry.get('cancer_type')})"
                 
                 with st.expander(title):
                     st.write(f"**Date:** {entry.get('timestamp')}")
-                    st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                    st.write(f"**Raw Data:** {raw_data}")
                     
-                    # DOWNLOAD CSV FILE
+                    # 1. Prepare Text Format (Hospital Bill Style)
+                    text_report = f"HOSPITAL CLINICAL LABORATORY\nPatient: {entry.get('patient_name')}\nDate: {entry.get('timestamp')}\nRisk: {entry.get('risk_score')}\nMarkers: {raw_data}"
+                    
+                    # 2. Prepare CSV Format
                     csv_content = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{raw_data}\""
-                        st.download_button("📥 CSV", csv_content, f"report_{entry.get('patient_name')}.csv", "text/csv", key=f"csv_{entry_id}")
+                    
+                    # 3. Create Side-by-Side Buttons
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.download_button("📥 Text", text_report, f"report_{entry.get('patient_name')}.txt", "text/plain")
+                    with col2:
+                        st.download_button("📥 CSV", csv_content, f"report_{entry.get('patient_name')}.csv", "text/csv")
                         
     except Exception as e:
         st.error(f"DB Load Error: {e}")
-
     # --- Clear History Button ---
     if st.button("🗑️ Clear All History"):
         try:
