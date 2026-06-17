@@ -33,6 +33,31 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
+# FOR BILL GENERATION
+from fpdf import FPDF
+
+def generate_pdf(entry):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, txt="HOSPITAL CLINICAL LABORATORY", ln=True, align='C')
+    pdf.set_font("Arial", size=12)
+    pdf.ln(10)
+    
+    # Fill in the content exactly like your bill format
+    report_text = f"""
+Patient Name : {entry.get('patient_name')}
+Date/Time    : {entry.get('timestamp')}
+Test Type    : {entry.get('cancer_type', '').upper()} RISK ASSESSMENT
+--------------------------------------------------
+Risk Score   : {entry.get('risk_score')}
+Raw Data     : {entry.get('raw_data')}
+--------------------------------------------------
+Please consult an oncologist for verification.
+    """
+    pdf.multi_cell(0, 10, txt=report_text)
+    return pdf.output(dest='S') # Returns PDF as bytes
+    
 # --- Logic Functions ---
 def raw_to_norm(x, cutoff=1.0):
     if x <= 0: return 0.0
@@ -155,7 +180,6 @@ if "report_content" in st.session_state and st.session_state.report_content:
         st.session_state.report_content = None
         st.rerun()
 # --- Sidebar History Log ---
-# --- Sidebar History Log ---
 with st.sidebar:
     st.title("📜 Patient History Log")
     try:
@@ -175,9 +199,17 @@ with st.sidebar:
                     st.write(f"**Risk Score:** {entry.get('risk_score')}")
                     st.write(f"**Raw Data:** {entry.get('raw_data')}")
                     
-                    # 1. Construct the CSV string
-                    # We wrap raw_data in quotes so commas inside the dictionary don't break the CSV
-                    csv_content = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{entry.get('raw_data')}\""
+                    # create two columns
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        # CSV FILE DOWNLAOD
+                        csv_content = f"Patient,Date,Cancer Type,Risk Score,Raw Data\n{entry.get('patient_name')},{entry.get('timestamp')},{entry.get('cancer_type')},{entry.get('risk_score')},\"{entry.get('raw_data')}\""
+                        st.download_button("📥 CSV", csv_content, f"report_{entry.get('patient_name')}.csv", "text/csv", key=f"csv_{entry_id}"
+
+                    with col2:
+                        # PDF DOWNLOAD
+                        pdf_bytes = generate _pdf(entry)
+                        st.download_button("📥 PDF", pdf_bytes, f"report_{entry.get('patient_name')}.pdf", "application/pdf", key=f"pdf_{entry_id}"
                     
                     # 2. Add the Download Button
                     st.download_button(
