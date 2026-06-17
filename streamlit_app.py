@@ -117,24 +117,29 @@ if st.session_state.get("data_saved", False):
     st.session_state.data_saved = False # Reset flag
     st.rerun() # Refresh once, safely
 # --- Sidebar History Log ---
+# 1. Add this function above your sidebar code
+@st.cache_data(ttl=10) # Refreshes every 10 seconds
+def get_patient_history():
+    try:
+        response = supabase.schema('public').table("patient_history").select("*").order("id", desc=True).execute()
+        return response.data
+    except Exception as e:
+        return []
+
+# 2. Use this in your sidebar
 with st.sidebar:
     st.title("📜 Patient History Log")
+    history = get_patient_history()
     
-    try:
-        # Fetch data directly from public schema
-        response = supabase.schema('public').table("patient_history").select("*").order("id", desc=True).execute()
-        
-        # Check if we have data
-        if response.data:
-            history = response.data
-            for entry in history:
-                # Use a unique key for each expander to prevent UI glitches
-                entry_id = entry.get('id', 'N/A')
-                with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')}", expanded=False):
-                    st.write(f"**Date:** {entry.get('timestamp')}")
-                    st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                    st.write(f"**Raw Data:** {entry.get('raw_data')}")
-                    
+    if history:
+        for entry in history:
+            entry_id = entry.get('id', 'N/A')
+            with st.expander(f"Patient: {entry.get('patient_name', 'Unknown')}"):
+                st.write(f"**Date:** {entry.get('timestamp')}")
+                st.write(f"**Risk Score:** {entry.get('risk_score')}")
+                st.write(f"**Raw Data:** {entry.get('raw_data')}")
+    else:
+        st.info("No records in database.")                    
                     # Correctly scoped download button
                     st.download_button(
                         label=f"📥 Download {entry_id}", 
