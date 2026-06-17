@@ -79,7 +79,6 @@ def raw_to_norm(x, cutoff=1.0):
 # SETTING UI OF WEBSITE
 st.set_page_config(page_title="Clinical Risk Assessment", layout="centered")
 st.title("🏥 Clinical Risk Assessment Tool")
-
 patient_name = st.text_input("Patient Full Name",key="patient_name")
 cancer = st.selectbox("Select Cancer Type", list(CANCER_CONFIG.keys()))
 info = CANCER_CONFIG[cancer]
@@ -222,30 +221,30 @@ with st.sidebar:
             if not filtered_history:
                 st.warning("No records match these filters.")
             else:
-                    for entry in filtered_history:
-                        # SAFE DATA HANDLING
-                        raw = entry.get('raw_data', '')
-                        if isinstance(raw, (bytes, bytearray)):
-                            raw = raw.decode('utf-8')
-                        
-                        title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
-                        
-                        # EVERYTHING BELOW HERE MUST BE INDENTED FURTHER
-                        with st.expander(title):
-                            st.write(f"**Date:** {entry.get('timestamp')}")
-                            st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
-                            st.write(f"**Risk Score:** {entry.get('risk_score')}")
-                            st.write(f"**Patient ID:** {entry.get('patient_id', 'N/A')}")
-                            
-                            # --- EXPORT OPTIONS ---
-                            col_pdf, col_csv = st.columns(2)
-                            with col_pdf:
-                                pdf_bytes = generate_pdf(entry)
-                                st.download_button("📥 PDF", pdf_bytes, f"report_{entry.get('patient_name')}.pdf", "application/pdf")
-                            with col_csv:
-                                st.download_button("📥 CSV", f"Patient,Date\n{entry.get('patient_name')},{entry.get('timestamp')}", f"report_{entry.get('patient_name')}.csv", "text/csv")    except Exception as e:
-        st.error(f"DB Load Error: {e}")
-
+            for entry in filtered_history:
+                # SAFE DATA HANDLING
+                raw = entry.get('raw_data', '')
+                if isinstance(raw, (bytes, bytearray)):
+                    raw = raw.decode('utf-8')
+                
+                title = f"{entry.get('patient_name')} ({entry.get('cancer_type')}) - {entry.get('timestamp')}"
+                
+                with st.expander(title):
+                    st.write(f"**Date:** {entry.get('timestamp')}")
+                    st.write(f"**Cancer Type:** {entry.get('cancer_type')}")
+                    st.write(f"**Risk Score:** {entry.get('risk_score')}")
+                    st.write(f"**Patient ID:** {entry.get('patient_id', 'N/A')}")
+                    
+                    # --- EXPORT OPTIONS ---
+                    col_pdf, col_csv = st.columns(2)
+                    with col_pdf:
+                        pdf_bytes = generate_pdf(entry)
+                        st.download_button("📥 PDF", pdf_bytes, f"report_{entry.get('patient_name')}.pdf", "application/pdf")
+                    
+                    with col_csv:
+                        # Keep this on one line or use a backslash \ to avoid syntax errors
+                        csv_data = f"Patient,Date\n{entry.get('patient_name')},{entry.get('timestamp')}"
+                        st.download_button("📥 CSV", csv_data, f"report_{entry.get('patient_name')}.csv", "text/csv")
     # --- Clear History Button ---
     if st.button("🗑️ Clear All History"):
         try:
